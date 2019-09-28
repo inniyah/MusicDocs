@@ -55,7 +55,7 @@ def dissmeasure(fvec, amp, model='min'):
 
     return D
 
-def get_plot(freq, amp, r_low, alpharange, method='product', intervals=None):
+def get_dissonance_plot(freq, amp, r_low, alpharange, method='product', intervals=None, frequencies=None):
     from numpy import linspace, empty, concatenate
     import matplotlib.pyplot as plt
 
@@ -81,10 +81,19 @@ def get_plot(freq, amp, r_low, alpharange, method='product', intervals=None):
     for n, d in intervals:
         plt.axvline(n/d, color='silver')
 
+    if not frequencies is None:
+        for k, v in frequencies.items():
+            plt.axvline(v, color='black')
+
     plt.yticks([])
     plt.minorticks_off()
     plt.xticks([n/d for n, d in intervals],
                ['{}/{}'.format(n, d) for n, d in intervals])
+
+    if not frequencies is None:
+        plt.xticks([v for k, v in frequencies.items()],
+                   [k for k, v in frequencies.items()])
+
     plt.tight_layout()
     return plt
 
@@ -111,7 +120,7 @@ def main():
 #    alpharange = 2.0
 #    method = 'product'
 
-    plt = get_plot(freq, amp, r_low, alpharange, method)
+    plt = get_dissonance_plot(freq, amp, r_low, alpharange, method)
     plt.show()
 
 if __name__ == '__main__':

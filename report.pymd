@@ -10,13 +10,19 @@ output:
 
 ```{python results="hide", echo=False}
 from numpy import array
-from sethares import get_plot as sethares_get_plot
+from sethares import get_dissonance_plot
+from notefreqs import get_notes_info
+
+import math
+
+def clean_print(*args, **kwargs):
+    print(*args, **kwargs)
 ```
 
 Dissonance curve with 6 harmonics and decay rate of 0.8 (Sethares Figure 3)
 
 ```{python Sethares Figure 3, echo=False}
-    plt = sethares_get_plot(
+    plt = get_dissonance_plot(
         freq = 500 * array([1 + i for i in range(6)]),
         amp = .88**array([0 + i for i in range(6)]),
         r_low = 1,
@@ -24,7 +30,7 @@ Dissonance curve with 6 harmonics and decay rate of 0.8 (Sethares Figure 3)
     )
     plt.show()
 
-    plt = sethares_get_plot(
+    plt = get_dissonance_plot(
         freq = 500 * array([1 + i for i in range(6)]),
         amp = .88**array([0 + i for i in range(6)]),
         r_low = 1,
@@ -34,27 +40,38 @@ Dissonance curve with 6 harmonics and decay rate of 0.8 (Sethares Figure 3)
     plt.show()
 ```
 
-Dissonance curve with 6 harmonics (Davide Verotta Figure 4)
+Dissonance curve with 8 harmonics
 
-```{python Davide Verotta Figure 4, echo=False}
-    plt = sethares_get_plot(
-        freq = 261.63 * array([1 + i for i in range(6)]),
-        amp = 1 / array([1 + i for i in range(6)]),
-        r_low = 1,
-        alpharange = 2.0
-    )
-    plt.show()
-```
-
-Dissonance curve with 100 harmonics and decay rate of 0.8
-
-```{python Lots of harmonics, echo=False}
-    plt = sethares_get_plot(
-        freq = 440.00 * array([1 + i for i in range(100)]),
-        amp = .88**array([0 + i for i in range(100)]),
+```{python More harmonics, echo=False}
+    plt = get_dissonance_plot(
+        freq = 440.00 * array([1 + i for i in range(8)]),
+        amp = 1.0**array([0 + i for i in range(8)]),
         r_low = 1,
         alpharange = 2.3,
         intervals = [(1, 1), (8, 7), (7, 6), (6, 5), (5, 4), (4, 3), (7, 5), (3, 2), (8, 5), (5, 3), (7, 4), (9, 5), (2, 1)]
     )
     plt.show()
+```
+
+Frequencies and ratios of equal-temperament 12 notes
+```{python Equal temperament notes info, echo=False}
+    interval_names = ['I','ii','II','iii','III','IV','v','V','vi','VI','vii','VII','I\'']
+    notes_names = ["A4", "B4b/A4#", "B4", "C4", "D4b/C4#", "D4", "E4b/D4#", "E4", "F4", "G4/F4#", "G4", "A4b/G4#", "A5" ]
+    notes_freqs = {name: 1.00 * math.pow(2., semitone/12.) for semitone, name in enumerate(notes_names)}
+
+    plt = get_dissonance_plot(
+        freq = 440.00 * array([1 + i for i in range(100)]),
+        amp = 0.8**array([0 + i for i in range(100)]),
+        r_low = 1,
+        alpharange = 2.1,
+        intervals = [(1, 1), (16, 15), (9, 8), (6, 5), (5, 4), (4, 3), (7, 5), (3, 2), (8, 5), (5, 3), (9, 5), (2, 1), (15,  8)],
+        frequencies = notes_freqs
+    )
+    plt.show()
+
+    notes_info = get_notes_info()
+
+    for k, d in notes_info.items():
+        ratios_str = ", ".join([f"{num}/{den}" for num, den, freq, err, conc in d['ratio']])
+        clean_print(f"{d['name']} ({interval_names[d['interval']]}): midi={d['midi']}, freq={d['freq']:.2f} Hz, ratios=[{ratios_str}]")
 ```
