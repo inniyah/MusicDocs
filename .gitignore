@@ -1,0 +1,10 @@
+__pycache__
+kernel-*.json
+*.docx
+*.html
+*.pdf
+*_files
+*.html_document.md
+*.pyc
+tmp
+*~

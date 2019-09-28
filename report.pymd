@@ -1,0 +1,60 @@
+---
+title: "Music Stuff"
+author: "Miriam Ruiz"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    keep_md: yes
+---
+
+```{python results="hide", echo=False}
+from numpy import array
+from sethares import get_plot as sethares_get_plot
+```
+
+Dissonance curve with 6 harmonics and decay rate of 0.8 (Sethares Figure 3)
+
+```{python Sethares Figure 3, echo=False}
+    plt = sethares_get_plot(
+        freq = 500 * array([1 + i for i in range(6)]),
+        amp = .88**array([0 + i for i in range(6)]),
+        r_low = 1,
+        alpharange = 2.3
+    )
+    plt.show()
+
+    plt = sethares_get_plot(
+        freq = 500 * array([1 + i for i in range(6)]),
+        amp = .88**array([0 + i for i in range(6)]),
+        r_low = 1,
+        alpharange = 4.2,
+        intervals = [(1, 1), (6, 5), (5, 4), (4, 3), (3, 2), (5, 3), (2, 1), (5, 2), (3, 1), (4, 1)]
+    )
+    plt.show()
+```
+
+Dissonance curve with 6 harmonics (Davide Verotta Figure 4)
+
+```{python Davide Verotta Figure 4, echo=False}
+    plt = sethares_get_plot(
+        freq = 261.63 * array([1 + i for i in range(6)]),
+        amp = 1 / array([1 + i for i in range(6)]),
+        r_low = 1,
+        alpharange = 2.0
+    )
+    plt.show()
+```
+
+Dissonance curve with 100 harmonics and decay rate of 0.8
+
+```{python Lots of harmonics, echo=False}
+    plt = sethares_get_plot(
+        freq = 440.00 * array([1 + i for i in range(100)]),
+        amp = .88**array([0 + i for i in range(100)]),
+        r_low = 1,
+        alpharange = 2.3,
+        intervals = [(1, 1), (6, 5), (5, 4), (4, 3), (7, 5), (3, 2), (8, 5), (5, 3), (7, 4), (9, 5), (2, 1)]
+    )
+    plt.show()
+```
