@@ -54,7 +54,7 @@ Dissonance curve with 100 harmonics and decay rate of 0.8
         amp = .88**array([0 + i for i in range(100)]),
         r_low = 1,
         alpharange = 2.3,
-        intervals = [(1, 1), (6, 5), (5, 4), (4, 3), (7, 5), (3, 2), (8, 5), (5, 3), (7, 4), (9, 5), (2, 1)]
+        intervals = [(1, 1), (8, 7), (7, 6), (6, 5), (5, 4), (4, 3), (7, 5), (3, 2), (8, 5), (5, 3), (7, 4), (9, 5), (2, 1)]
     )
     plt.show()
 ```

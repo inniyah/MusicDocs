@@ -43,22 +43,24 @@ class MusicDefs:
     # The augmented 5th chord works very well as a substitute for a dominant one, since it has a similar
     # loudness and contains the tension that is subsequently resolved with a tonic.
 
-    CHORD_MAJOR      = TRIAD_MAJOR
-    CHORD_MINOR      = TRIAD_MINOR
-    CHORD_DIMINISHED = TRIAD_DIMINISHED
-    CHORD_AUGMENTED  = TRIAD_AUGMENTED
+    CHORD_MAJOR      = TRIAD_MAJOR      # I + III + V
+    CHORD_MINOR      = TRIAD_MINOR      # I + iii + V
+    CHORD_DIMINISHED = TRIAD_DIMINISHED # I + iii + v
+    CHORD_AUGMENTED  = TRIAD_AUGMENTED  # I + III + vi
 
     # Major seventh chords are considered to be thoughtful, soft.
     # Major seventh chords also sound “jazzy” because they’re commonly used in Jazz.
-    CHORD_MAJOR_SEVENTH      = TRIAD_MAJOR      + INTVL_MAJOR_SEVENTH
+    CHORD_MAJOR_SEVENTH      = TRIAD_MAJOR      + INTVL_MAJOR_SEVENTH # I + III + V + VII
     # Dominant seventh chords are considered to be strong and restless.
     # Dominant seventh chords are commonly found in jazz and blues, as well as jazz
     # inspired r&b, hip hop, & EDM.
-    CHORD_DOMINANT_SEVENTH   = TRIAD_MAJOR      + INTVL_MINOR_SEVENTH
+    CHORD_DOMINANT_SEVENTH   = TRIAD_MAJOR      + INTVL_MINOR_SEVENTH # I + III + V + vii
     # Minor seventh chords are considered to be moody, or contemplative.
     # If major chords are happy, and minor chords are sad, then minor seventh chords
     # are somewhere in between these two.
-    CHORD_MINOR_SEVENTH      = TRIAD_MINOR      + INTVL_MAJOR_SEVENTH
+    CHORD_MINOR_SEVENTH      = TRIAD_MINOR      + INTVL_MINOR_SEVENTH # I + iii + V + vii
+    # Semidiminished seventh
+    CHORD_SEMIDIM_SEVENTH    = TRIAD_DIMINISHED + INTVL_MINOR_SEVENTH # I + iii + v + vii
     # Probably the most common use of the diminished seventh chord is like a bridge between two adjacent chords.
     # Another way you can use the diminished seventh chord is as a substitute for the dominant chord. In this case,
     # you would use the diminished seventh chord that is half a tone above the dominant chord.
@@ -66,7 +68,9 @@ class MusicDefs:
     # it is formed entirely by minor third intervals.
     # There are only 3 diminished seventh chords. The rest are inversions or enharmonics of these 3 chords.
     # Both augmented fifth and diminished seventh are classified as symmetric chords.
-    CHORD_DIMINISHED_SEVENTH = TRIAD_DIMINISHED + INTVL_MAJOR_SIXTH
+    CHORD_DIMINISHED_SEVENTH = TRIAD_DIMINISHED + INTVL_MAJOR_SIXTH    # I + iii + v + VI
+    CHORD_SEVENTH_MIN_VIIMAJ = TRIAD_MINOR      + INTVL_MAJOR_SEVENTH  # I + iii + V + VII
+    CHORD_SEVENTH_AUG_VIIMAJ = TRIAD_AUGMENTED  + INTVL_MAJOR_SEVENTH  # I + III + vi + VII
 
     # So far every chord we’ve dealt with has been composed of a root, a third, and a fifth.
     # While the most common chords are built off this foundation, there are chords that don’t
@@ -129,6 +133,33 @@ class MusicDefs:
     SCALE_WHOLE = NOTE_ROOT + INTVL_MAJOR_SECOND + INTVL_MAJOR_THIRD + INTVL_TRITONE + INTVL_MINOR_SIXTH + INTVL_MINOR_SEVENTH
     SCALE_CHROMATIC = NOTE_ROOT + INTVL_MINOR_SECOND + INTVL_MAJOR_SECOND + INTVL_MINOR_THIRD + INTVL_MAJOR_THIRD + INTVL_PERF_FOURTH + INTVL_TRITONE + \
                                   INTVL_PERF_FIFTH + INTVL_MINOR_SIXTH + INTVL_MAJOR_SIXTH + INTVL_MINOR_SEVENTH + INTVL_MAJOR_SEVENTH
+
+    RATIO_INTVL_UNISON        = [  1,  1 ]
+    RATIO_INTVL_MINOR_SECOND  = [ 16, 15 ]
+    RATIO_INTVL_MAJOR_SECOND  = [  9,  8 ]
+    RATIO_INTVL_MINOR_THIRD   = [  6,  5 ]
+    RATIO_INTVL_MAJOR_THIRD   = [  5,  4 ]
+    RATIO_INTVL_PERF_FOURTH   = [  4,  3 ]
+    RATIO_INTVL_TRITONE       = [  7,  5 ]
+    RATIO_INTVL_PERF_FIFTH    = [  3,  2 ]
+    RATIO_INTVL_MINOR_SIXTH   = [  8,  5 ]
+    RATIO_INTVL_MAJOR_SIXTH   = [  5,  3 ]
+    RATIO_INTVL_MINOR_SEVENTH = [  9,  5 ]
+    RATIO_INTVL_MAJOR_SEVENTH = [ 15,  8 ]
+    RATIO_INTVL_PERF_OCTAVE   = [  2,  1 ]
+
+    RATIO_TRIAD_MAJOR      = [  4,  5,  6 ]
+    RATIO_TRIAD_MINOR      = [ 10, 12, 15 ]
+    RATIO_TRIAD_DIMINISHED = [  5,  6,  7 ]
+    RATIO_TRIAD_AUGMENTED  = [  5,  6,  8 ]
+
+    RATIO_CHORD_MAJOR_SEVENTH      = [  8, 10, 12, 15 ]
+    RATIO_CHORD_DOMINANT_SEVENTH   = [ 20, 25, 30, 36 ]
+    RATIO_CHORD_MINOR_SEVENTH      = [ 10, 12, 15, 18 ]
+    RATIO_CHORD_SEMIDIM_SEVENTH    = [  5,  6,  7,  9 ]
+    RATIO_CHORD_DIMINISHED_SEVENTH = [ 15, 18, 21, 25 ]
+    RATIO_CHORD_SEVENTH_MIN_VIIMAJ = [ 40, 48, 60, 75 ]
+    RATIO_CHORD_SEVENTH_AUG_VIIMAJ = [ 40, 48, 64, 75 ]
 
 def main():
     pass
