@@ -8,6 +8,16 @@ Python translation of http://sethares.engr.wisc.edu/comprog.html
 from __future__ import division
 import numpy as np
 
+# Original model used products of the two amplitudes a1⋅a2, but this was changed to minimum
+# of the two amplitudes min(a1, a2), as explained in G: Analysis of the Time Domain Model
+# appendix of Tuning, Timbre, Spectrum, Scale.
+#
+#     This weighting is incorporated into the dissonance model (E.2) by assuming that the
+#     roughness is proportional to the loudness of the beating. ... Thus, the amplitude of
+#     the beating is given by the minimum of the two amplitudes.
+#
+# ( https://gist.github.com/endolith/3066664 )
+
 def dissmeasure(fvec, amp, model='min'):
     """
     Given a list of partials in fvec, with amplitudes in amp, this routine
