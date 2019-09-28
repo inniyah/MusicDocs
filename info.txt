@@ -56,9 +56,94 @@ https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0008144
 
 http://www.richardhodges.com/MusicalScale.htm
 
+http://www.jaymaron.com/music.html
+
+-----
+
+https://gist.github.com/endolith/3066664
+https://soundcloud.com/endolith/6-harmonics-sethares-plot
+http://sethares.engr.wisc.edu/comprog.html
+http://sethares.engr.wisc.edu/consemi.html
+http://www.acousticslab.org/learnmoresra/moremodel.html
+
 -----
 
 https://angelsguitar.com/acorde-quinta-aumentada/
 
 https://angelsguitar.com/acorde-de-septima-disminuida-guitarra/
 
+-----
+
+Diatonic scales [ http://www.jaymaron.com/music.html#diatonic ]
+A set of 7 diatonic scales (or "modes") follow from a compact and natural set of definitions. k
+
+A diatonic scale consists of a set of notes such that:
+(*) The tonic and octave are both included
+(*) There are 8 notes including the tonic and octave
+(*) Steps larger than a whole step are forbidden
+(*) There must be at least 2 whole steps separating each half step,
+       including octave periodicity
+
+This implies:
+The scale has 2 half steps and 5 whole steps.
+The half steps are separated by 2 whole steps in one direction and 3 whole steps
+in the other direction.
+There is exactly 1 tritone.
+There are 7 modes that satisfy the definition.
+
+
+The first seven modes in this figure are the diatonic modes. The upper staff is a standard treble clef and the bottom note in each mode is an "A". The Aeolian mode corresponds to the minor mode and the Ionian mode corresponds to the major mode. In addition to the major and minor modes there are 5 additional modes.
+
+The modes are ordered so that they grow progressively "sharper" as you move to the right.
+
+Each mode differs by exactly one note from its adjacent modes.
+
+The lower staff is a "geometric clef" where the vertical position of each note corresponds to its pitch. The bottom line is the tonic, the top line is the octave, and the middle line is the tritone. Adjacent lines are separated by a whole step. This representation is designed to visually bring out the pitch of each note. In the leftward diatonic modes the notes are shifted toward the tonic and the rightward diatonic modes the notes are shifted toward the octave.
+
+Equivalently, we can define an infinite sequence of whole and half steps where the notes look like
+
+
+o o oo o o oo o oo o o oo o oo o o oo
+
+There are 7 unique choices of tonic which correspond to the 7 diatonic modes.
+
+
+
+Melodic modes [ http://www.jaymaron.com/music.html#melodic ]
+In the diatonic modes there must be at least 2 whole steps separating each half step. If we relax this condition and allow half steps to be separated by only one whole step then another set of modes appears with the sequence:
+
+o o o oo oo o o o oo oo o o o oo oo o o o oo oo o
+This sequence has 7 unique choices of tonic hence there are 7 modes, the "melodic modes". They contain 2 tritones whereas the diatonic modes contain 1.
+
+The melodic modes can be arranged into a natural sequence that parallels the diatonic modes. The melodic modes are depicted in the above figure, which is equivalent to the table below.
+
+
+Notes           Mode              Sharpness
+
+o o o oo o oo   Lydian                3
+o o oo o o oo   Ionian                2       Major mode
+o o oo o oo o   Mixolydian            1
+o oo o o oo o   Dorian                0
+o oo o oo o o   Aeolian              -1       Minor mode
+oo o o oo o o   Phrygian             -2
+oo o oo o o o   Locrian              -3
+
+o o o o oo oo   Lydian sharp 5        4
+o o o oo oo o   Lydian/Mixolydian     2
+o oo o o o oo   Melodic minor         1
+o o oo oo o o   Mixolydian/Aeolian    0
+oo o o o oo o   Dorian/Phrygian      -1
+o oo oo o o o   Aeolian/Locrian      -2
+oo oo o o o o   Locrian flat 4       -4
+
+"Sharpness" reflects whether the notes are stacked toward the octave (lots of sharps, or positive sharpness) or toward the tonic (lots of flats, or negative sharpness).
+
+If the notes in a mode are assigned integers I where I=0 corresponds to the tonic and I=12 corresponds to the octave, the sharpness is
+
+
+Sharpness  =  Sum over all notes of (I - 6)
+
+If you start with a diatonic mode and move one of the tritone pitches by a half step then you get an adjacent diatonic mode. If you change a non-tritone pitch by a half step then you get a melodic mode.
+To move from a melodic mode to an adjacent melodic mode you need to change 2 notes.
+
+The melodic modes have a natural ordering that parallels the diatonic modes. The melodic modes can be thought of as alternate pathways for shifting between diatonic modes.
