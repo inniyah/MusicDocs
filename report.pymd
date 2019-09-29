@@ -15,6 +15,8 @@ from notefreqs import get_notes_info
 
 import math
 
+import IPython.display
+
 def clean_print(*args, **kwargs):
     print(*args, **kwargs)
 ```
@@ -74,4 +76,42 @@ Frequencies and ratios of equal-temperament 12 notes
     for k, d in notes_info.items():
         ratios_str = ", ".join([f"{num}/{den}" for num, den, freq, err, conc in d['ratio']])
         clean_print(f"{d['name']} ({interval_names[d['interval']]}): midi={d['midi']}, freq={d['freq']:.2f} Hz, ratios=[{ratios_str}]")
+```
+
+```{python Cairo test, echo=False}
+from io import BytesIO
+
+import cairo
+
+with BytesIO() as svgio:
+    surface = cairo.SVGSurface(svgio, 200, 200)
+
+    # These lines are copied verbatim from the
+    # pycairo page: https://pycairo.readthedocs.io
+    context = cairo.Context(surface)
+    x, y, x1, y1 = 0.1, 0.5, 0.4, 0.9
+    x2, y2, x3, y3 = 0.6, 0.1, 0.9, 0.5
+    context.scale(200, 200)
+    context.set_line_width(0.04)
+    context.move_to(x, y)
+    context.curve_to(x1, y1, x2, y2, x3, y3)
+    context.stroke()
+    context.set_source_rgba(1, 0.2, 0.2, 0.6)
+    context.set_line_width(0.02)
+    context.move_to(x, y)
+    context.line_to(x1, y1)
+    context.move_to(x2, y2)
+    context.line_to(x3, y3)
+    context.stroke()
+    # end of pycairo copy
+
+    surface.write_to_png('test.png')
+    surface.finish()
+    context.save()
+    svg_data = svgio.getvalue()
+
+#ipython_svg = IPython.display.SVG(data=svg_data)
+#IPython.display.display(ipython_svg)
+
+IPython.display.Image('test.png')
 ```

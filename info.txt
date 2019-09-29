@@ -147,3 +147,10 @@ If you start with a diatonic mode and move one of the tritone pitches by a half 
 To move from a melodic mode to an adjacent melodic mode you need to change 2 notes.
 
 The melodic modes have a natural ordering that parallels the diatonic modes. The melodic modes can be thought of as alternate pathways for shifting between diatonic modes.
+
+-----
+
+https://github.com/fomightez/cairo-jupyter
+https://github.com/stuaxo/ipython_cairo
+https://nedbatchelder.com/blog/201901/drawing_cairo_svg_in_a_jupyter_notebook.html
+https://pycairo.readthedocs.io
