@@ -105,7 +105,9 @@ with BytesIO() as svgio:
     context.stroke()
     # end of pycairo copy
 
-    surface.write_to_png('test.png')
+    pngio = BytesIO()
+    surface.write_to_png(pngio)
+
     surface.finish()
     context.save()
     svg_data = svgio.getvalue()
@@ -113,5 +115,5 @@ with BytesIO() as svgio:
 #ipython_svg = IPython.display.SVG(data=svg_data)
 #IPython.display.display(ipython_svg)
 
-IPython.display.Image('test.png')
+IPython.display.Image(data=pngio.getvalue())
 ```
