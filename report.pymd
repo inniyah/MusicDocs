@@ -67,8 +67,8 @@ Frequencies and ratios of equal-temperament 12 notes
     notes_freqs = {name: 1.00 * math.pow(2., semitone/12.) for semitone, name in enumerate(notes_names)}
 
     plt = get_dissonance_plot(
-        freq = 440.00 * array([1 + i for i in range(100)]),
-        amp = 0.8**array([0 + i for i in range(100)]),
+        freq = 440.00 * array([1 + i for i in range(16)]),
+        amp = 0.9**array([0 + i for i in range(16)]),
         r_low = 1,
         alpharange = 2.1,
         intervals = [(1, 1), (16, 15), (9, 8), (6, 5), (5, 4), (4, 3), (7, 5), (3, 2), (8, 5), (5, 3), (9, 5), (2, 1), (15,  8)],
@@ -81,6 +81,12 @@ Frequencies and ratios of equal-temperament 12 notes
     for k, d in notes_info.items():
         ratios_str = ", ".join([f"{num}/{den}" for num, den, freq, err, conc in d['ratio']])
         clean_print(f"{d['name']} ({interval_names[d['interval']]}): midi={d['midi']}, freq={d['freq']:.2f} Hz, ratios=[{ratios_str}]")
+
+        cent_err_str = ", ".join([f"{err:.1f} ({num}/{den})" for num, den, freq, err, conc in d['ratio']])
+        clean_print(f"{d['name']} ({interval_names[d['interval']]}): error={cent_err_str}]")
+
+        concordance_str = ", ".join([f"{conc * 100:.1f}% ({num}/{den})" for num, den, freq, err, conc in d['ratio']])
+        clean_print(f"{d['name']} ({interval_names[d['interval']]}): concordance={concordance_str}]")
 ```
 
 ```{python Cairo hexa test, echo=False}
