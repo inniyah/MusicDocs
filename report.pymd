@@ -13,8 +13,13 @@ from numpy import array
 from sethares import get_dissonance_plot
 from notefreqs import get_notes_info
 
+from MusicDefs import MusicDefs
+from MusicPics import PianoOctavePic, HexagonalLayoutPic
+
+import cairo
 import math
 
+from io import BytesIO
 import IPython.display
 
 def clean_print(*args, **kwargs):
@@ -79,65 +84,12 @@ Frequencies and ratios of equal-temperament 12 notes
 ```
 
 ```{python Cairo hexa test, echo=False}
-from io import BytesIO
-import cairo
-
-D = 33
-# diameter of hexagon in pixels
-shift_x = (math.sqrt(3)*D/2., 0)
-# vectorial distance to next hexagon in row
-shift_y = (math.sqrt(3)*D/4., 3*D/4.)
-# vectorial distance to hexagon in next row
-side_fields = 7   #This is the number of the colored hexagons that make
-# up the overall board that is actually hexagon comprised of small, colored ones
-# number of fields along each side. Changing the vaue to 33 makes a lot of tiny
-# heaxagons on each side of the board.
-width = int((2*side_fields-1)*math.sqrt(3)*D/2.+3*D/4.)+1
-# with of surface plus some border in pixels
-height = int((2*side_fields-1)*3*D/4.+2*D)+1
-# with of surface plus some border in pixels
-
+hexa_pic = HexagonalLayoutPic(D=33, side_fields=7)
 with BytesIO() as svgio:
-    surface = cairo.SVGSurface(svgio, width, height)
+    surface = cairo.SVGSurface(svgio, hexa_pic.width, hexa_pic.height)
     ctx = cairo.Context(surface)
 
-    ctx.set_source_rgb(1,1,1)
-    ctx.rectangle(0,0,width,height)
-    ctx.fill()
-
-    field_colors = ((1,1,1), (0,0,0), (1,0,0))
-    p = (
-        (math.sqrt(3)*D/4., D/4.),
-        (0, D/2.),
-        (-math.sqrt(3)*D/4., D/4.),
-        (-math.sqrt(3)*D/4., -D/4.),
-        (0, -D/2.),
-        (math.sqrt(3)*D/4.,-D/4.)
-    )
-
-    def hexagon(ctx,color):
-        for pair in p:
-            ctx.line_to(pair[0],pair[1])
-        ctx.close_path()
-        ctx.set_source_rgb(0,0,0)
-        ctx.stroke_preserve()
-        ctx.set_source_rgb(*field_colors[color % 3])
-        ctx.fill()
-
-    fields_in_line = side_fields
-    increment, decreasing = 1, 0
-    ctx.translate((side_fields-1)*math.sqrt(3)*D/4.,D)
-    for j in range(2*side_fields-1):
-        if fields_in_line > 2*side_fields-2:
-            increment = -1
-        for i in range(fields_in_line):
-            ctx.translate(shift_x[0],shift_x[1])
-            hexagon(ctx,i+j+decreasing)
-        ctx.translate(-fields_in_line*shift_x[0],-fields_in_line*shift_x[1])
-        ctx.translate(-increment*shift_y[0],shift_y[1])
-        if increment == -1:
-            decreasing += 1
-        fields_in_line += increment
+    hexa_pic.draw_hexa(ctx)
 
     pngio = BytesIO()
     surface.write_to_png(pngio)
@@ -153,57 +105,12 @@ IPython.display.Image(data=pngio.getvalue())
 ```
 
 ```{python Cairo piano test, echo=False}
-from io import BytesIO
-import cairo
- 
-def white_key(cr, pos):
- 
-        cr.set_line_width(0.01)
-        cr.set_source_rgb(0, 0, 0)
-        cr.rectangle(pos , 0,  .2,  1 )
-        cr.stroke()
-        cr.set_source_rgb(1, 1, 1)
-        cr.rectangle(pos , 0,  .2,  1 )
-        cr.fill()
-         
-def black_key(cr, pos):
- 
-        cr.set_line_width(0.01)
-        cr.set_source_rgb(0.0, 0.0, 0.0)
-        cr.rectangle(pos  , 0 , .1 , .6  )
-        cr.fill()
-        cr.stroke()
-
-def draw_piano(cr, width, height):
-        cr.set_source_rgb(0.5, 0.5, 0.5)
-        cr.rectangle(0, 0, width, height)
-        cr.fill()
- 
-        cr.translate(20, 20)
-        cr.scale((width + 50) / 5, (height - 100) / 1.0)
-        white_key(cr, .1)
-        black_key(cr, .2) 
-        white_key(cr, .3)
-        black_key(cr, .4) 
-        white_key(cr, .5)
-        white_key(cr, .7)
-        black_key(cr, .8) 
-        white_key(cr, .9)
-        black_key(cr, 1.0) 
-        white_key(cr, 1.1)
-        black_key(cr, 1.2) 
-        white_key(cr, 1.3)
-        white_key(cr, 1.5) 
-        black_key(cr, 1.6) 
-
-width = 400
-height = 200
-
+piano_pic = PianoOctavePic(width=400, height=200)
 with BytesIO() as svgio:
-    surface = cairo.SVGSurface(svgio, width, height)
+    surface = cairo.SVGSurface(svgio, piano_pic.width, piano_pic.height)
     ctx = cairo.Context(surface)
 
-    draw_piano(ctx, width, height)
+    piano_pic.draw_piano(ctx, )
 
     pngio = BytesIO()
     surface.write_to_png(pngio)
@@ -213,8 +120,6 @@ with BytesIO() as svgio:
     svg_data = svgio.getvalue()
 
 #print(svg_data)
-#IPython.display.SVG(data=svg_data)
-
 IPython.display.Image(data=pngio.getvalue())
 ```
 
