@@ -83,35 +83,71 @@ from io import BytesIO
 
 import cairo
 
-with BytesIO() as svgio:
-    surface = cairo.SVGSurface(svgio, 200, 200)
+D = 33
+# diameter of hexagon in pixels
+shift_x = (math.sqrt(3)*D/2., 0)
+# vectorial distance to next hexagon in row
+shift_y = (math.sqrt(3)*D/4., 3*D/4.)
+# vectorial distance to hexagon in next row
+side_fields = 7   #This is the number of the colored hexagons that make
+# up the overall board that is actually hexagon comprised of small, colored ones
+# number of fields along each side. Changing the vaue to 33 makes a lot of tiny
+# heaxagons on each side of the board.
+width = int((2*side_fields-1)*math.sqrt(3)*D/2.+3*D/4.)+1
+# with of surface plus some border in pixels
+height = int((2*side_fields-1)*3*D/4.+2*D)+1
+# with of surface plus some border in pixels
 
-    # These lines are copied verbatim from the
-    # pycairo page: https://pycairo.readthedocs.io
-    context = cairo.Context(surface)
-    x, y, x1, y1 = 0.1, 0.5, 0.4, 0.9
-    x2, y2, x3, y3 = 0.6, 0.1, 0.9, 0.5
-    context.scale(200, 200)
-    context.set_line_width(0.04)
-    context.move_to(x, y)
-    context.curve_to(x1, y1, x2, y2, x3, y3)
-    context.stroke()
-    context.set_source_rgba(1, 0.2, 0.2, 0.6)
-    context.set_line_width(0.02)
-    context.move_to(x, y)
-    context.line_to(x1, y1)
-    context.move_to(x2, y2)
-    context.line_to(x3, y3)
-    context.stroke()
-    # end of pycairo copy
+with BytesIO() as svgio:
+    surface = cairo.SVGSurface(svgio, width, height)
+    ctx = cairo.Context(surface)
+
+    ctx.set_source_rgb(1,1,1)
+    ctx.rectangle(0,0,width,height)
+    ctx.fill()
+
+    field_colors = ((1,1,1), (0,0,0), (1,0,0))
+    p = (
+        (math.sqrt(3)*D/4., D/4.),
+        (0, D/2.),
+        (-math.sqrt(3)*D/4., D/4.),
+        (-math.sqrt(3)*D/4., -D/4.),
+        (0, -D/2.),
+        (math.sqrt(3)*D/4.,-D/4.)
+    )
+
+    def hexagon(ctx,color):
+        for pair in p:
+            ctx.line_to(pair[0],pair[1])
+        ctx.close_path()
+        ctx.set_source_rgb(0,0,0)
+        ctx.stroke_preserve()
+        ctx.set_source_rgb(*field_colors[color % 3])
+        ctx.fill()
+
+    fields_in_line = side_fields
+    increment, decreasing = 1, 0
+    ctx.translate((side_fields-1)*math.sqrt(3)*D/4.,D)
+    for j in range(2*side_fields-1):
+        if fields_in_line > 2*side_fields-2:
+            increment = -1
+        for i in range(fields_in_line):
+            ctx.translate(shift_x[0],shift_x[1])
+            hexagon(ctx,i+j+decreasing)
+        ctx.translate(-fields_in_line*shift_x[0],-fields_in_line*shift_x[1])
+        ctx.translate(-increment*shift_y[0],shift_y[1])
+        if increment == -1:
+            decreasing += 1
+        fields_in_line += increment
 
     pngio = BytesIO()
     surface.write_to_png(pngio)
 
+    ctx.save()
     surface.finish()
-    context.save()
     svg_data = svgio.getvalue()
 
+print(svg_data)
 #ipython_svg = IPython.display.SVG(data=svg_data)
 #IPython.display.display(ipython_svg)
 
