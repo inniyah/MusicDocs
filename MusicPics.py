@@ -80,22 +80,26 @@ class PianoOctavePic:
 
     def white_key(self, pos):
         self.ctx.set_line_width(0.01)
-        self.ctx.set_source_rgb(0, 0, 0)
-        self.ctx.rectangle(pos , 0,  .2,  1 )
+        self.ctx.set_source_rgb(0.0, 0.0, 0.0)
+        self.ctx.rectangle(pos, 0.0, 0.2, 1.0)
         self.ctx.stroke()
-        self.ctx.set_source_rgb(1, 1, 1)
-        self.ctx.rectangle(pos , 0,  .2,  1 )
+        self.ctx.set_source_rgb(1.0, 1.0, 1.0)
+        self.ctx.rectangle(pos, 0.0, 0.2, 1.0)
         self.ctx.fill()
 
     def black_key(self, pos):
         self.ctx.set_line_width(0.01)
         self.ctx.set_source_rgb(0.0, 0.0, 0.0)
-        self.ctx.rectangle(pos  , 0 , .1 , .6  )
+        self.ctx.rectangle(pos + 0.045, 0.0 , 0.1 , 0.6)
         self.ctx.fill()
         self.ctx.stroke()
 
-    def draw_piano(self, ctx):
+    def draw_piano(self, ctx, scale=(1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)):
         self.ctx = ctx
+
+        notes = [(scale & 1<<r != 0) for r in range(12)]
+        whites = [num for num, white in enumerate(notes) if white]
+        blacks = [num for num, white in enumerate(notes) if not white]
 
         self.ctx.set_source_rgb(0.5, 0.5, 0.5)
         self.ctx.rectangle(0, 0, self.width, self.height)
@@ -103,23 +107,73 @@ class PianoOctavePic:
  
         self.ctx.translate(20, 20)
         self.ctx.scale((self.width + 50) / 5, (self.height - 100) / 1.0)
+
         self.white_key(.1)
-        self.black_key(.2) 
         self.white_key(.3)
-        self.black_key(.4) 
         self.white_key(.5)
         self.white_key(.7)
-        self.black_key(.8) 
         self.white_key(.9)
-        self.black_key(1.0) 
         self.white_key(1.1)
-        self.black_key(1.2) 
         self.white_key(1.3)
-        self.white_key(1.5) 
-        self.black_key(1.6) 
+
+        self.black_key(.2)
+        self.black_key(.4)
+        self.black_key(.8)
+        self.black_key(1.0)
+        self.black_key(1.2)
 
 def main():
-    pass
+    import ctypes
+    import time
+
+    from pyglet import app, clock, font, gl, image, window
+
+    from MusicDefs import MusicDefs
+
+    WIDTH, HEIGHT = 400, 200
+
+    window = window.Window(width=WIDTH, height=HEIGHT)
+    #ft = font.load('Arial', 24)
+    #text = font.Text(ft, 'Hello World')
+
+    # create data shared by ImageSurface and Texture
+    data = (ctypes.c_ubyte * (WIDTH * HEIGHT * 4))()
+    stride = WIDTH * 4
+    surface = cairo.ImageSurface.create_for_data (data, cairo.FORMAT_ARGB32, WIDTH, HEIGHT, stride); 
+    texture = image.Texture.create_for_size(gl.GL_TEXTURE_2D, WIDTH, HEIGHT, gl.GL_RGBA)
+
+    piano_pic = PianoOctavePic(width=WIDTH, height=HEIGHT)
+
+    def update_surface(dt, surface):
+        ctx = cairo.Context(surface)
+        piano_pic.draw_piano(ctx)
+
+    @window.event
+    def on_draw():
+        window.clear()
+
+        gl.glEnable(gl.GL_TEXTURE_2D)
+
+        gl.glBindTexture(gl.GL_TEXTURE_2D, texture.id)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, WIDTH, HEIGHT, 0, gl.GL_BGRA, gl.GL_UNSIGNED_BYTE, data)
+
+        gl.glBegin(gl.GL_QUADS)
+        gl.glTexCoord2f(0.0, 1.0)
+        gl.glVertex2i(0, 0)
+        gl.glTexCoord2f(1.0, 1.0)
+        gl.glVertex2i(WIDTH, 0)
+        gl.glTexCoord2f(1.0, 0.0)
+        gl.glVertex2i(WIDTH, HEIGHT)
+        gl.glTexCoord2f(0.0, 0.0)
+        gl.glVertex2i(0, HEIGHT)
+        gl.glEnd()
+
+        #text.draw()
+
+        #print('FPS: %f' % clock.get_fps())
+
+    clock.schedule_interval(update_surface, 1/120.0, surface)
+    app.run()
 
 if __name__ == '__main__':
     main()
