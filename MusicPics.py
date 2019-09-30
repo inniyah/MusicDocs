@@ -49,7 +49,7 @@ class HexagonalLayoutPic:
         self.ctx.set_source_rgb(*self.field_colors[color % 3])
         self.ctx.fill()
 
-    def draw_hexa(self, ctx):
+    def draw_pic(self, ctx):
         self.ctx = ctx
 
         self.ctx.set_source_rgb(1, 1, 1)
@@ -94,7 +94,7 @@ class PianoOctavePic:
         self.ctx.fill()
         self.ctx.stroke()
 
-    def draw_piano(self, ctx, scale=(1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)):
+    def draw_pic(self, ctx, scale=(1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)):
         self.ctx = ctx
 
         notes = [(scale & 1<<r != 0) for r in range(12)]
@@ -131,6 +131,7 @@ def main():
     from MusicDefs import MusicDefs
 
     pic = PianoOctavePic(width=400, height=200)
+    pic = HexagonalLayoutPic(D=33, side_fields=7)
 
     window = window.Window(width=pic.width, height=pic.height)
     #ft = font.load('Arial', 24)
@@ -144,7 +145,7 @@ def main():
 
     def update_surface(dt, surface):
         ctx = cairo.Context(surface)
-        pic.draw_piano(ctx)
+        pic.draw_pic(ctx)
 
     @window.event
     def on_draw():

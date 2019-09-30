@@ -95,7 +95,7 @@ with BytesIO() as svgio:
     surface = cairo.SVGSurface(svgio, hexa_pic.width, hexa_pic.height)
     ctx = cairo.Context(surface)
 
-    hexa_pic.draw_hexa(ctx)
+    hexa_pic.draw_pic(ctx)
 
     pngio = BytesIO()
     surface.write_to_png(pngio)
@@ -116,7 +116,7 @@ with BytesIO() as svgio:
     surface = cairo.SVGSurface(svgio, piano_pic.width, piano_pic.height)
     ctx = cairo.Context(surface)
 
-    piano_pic.draw_piano(ctx, )
+    piano_pic.draw_pic(ctx, )
 
     pngio = BytesIO()
     surface.write_to_png(pngio)
