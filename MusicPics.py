@@ -7,6 +7,44 @@ import math
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)
 SCALE_MAJOR_MELODIC  = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<10)
 
+CHORDS_INFO = [
+    # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
+    [ [], (0, 4, 7, 11), "Major seventh Chord" ],
+    [ [], (0, 3, 7, 10), "Minor seventh Chord" ],
+    [ [], (0, 4, 7, 10), "Dominant seventh Chord" ],
+    [ [], (0, 3, 6,  9), "Diminished seventh Chord" ],
+    [ [], (0, 3, 6, 10), "Half-diminished seventh Chord" ],
+    [ [], (0, 3, 7, 11), "Minor major seventh Chord" ],
+    [ [], (0, 4, 8, 11), "Augmented major seventh Chord" ],
+
+    # Non-tertian seventh chords: constructed using augmented or diminished thirds
+    [ [], (0, 4, 8, 10), "Augmented minor seventh Chord" ],
+    [ [], (0, 3, 6, 11), "Diminished major seventh Chord" ],
+    [ [], (0, 4, 6, 10), "Dominant seventh flat five Chord" ],
+    [ [], (0, 4, 6, 11), "Major seventh flat five Chord" ],
+
+    # Primary triads
+    [ [], (0, 4, 7),  "Major Triad" ],
+    [ [], (0, 3, 7),  "Minor Triad" ],
+    [ [], (0, 3, 6),  "Diminished Triad" ],
+    [ [], (0, 4, 8),  "Augmented Triad" ],
+
+    # Suspended triads
+    [ [], (0, 2, 7),  "Sus2 Triad" ],
+    [ [], (0, 5, 7),  "Sus4 Triad" ],
+]
+
+CHROMATIC_NOTES = ['C', 'Db/C#', 'D', 'Eb/D#', 'E', 'F', 'Gb/F#', 'G', 'Ab/G#', 'A', 'Bb/A#', 'B']
+
+for chord_info in CHORDS_INFO:
+    if not chord_info[0]:
+        chord_info[0] = [0] * 12
+        for i in range(0, 12):
+            chord_mask = 0
+            for num_note in chord_info[1]:
+                chord_mask |= 1 << (i + num_note) % 12
+            chord_info[0][i] = chord_mask
+
 class HexagonalLayoutPic:
     def __init__(self, D, scale=SCALE_MAJOR_DIATONIC, h = 4):
         self.ctx = None
@@ -41,6 +79,11 @@ class HexagonalLayoutPic:
             (                0., -D/2.),
             ( math.sqrt(3)*D/4., -D/4.)
         )
+
+        for chord_signatures, chord_intervals, chord_name in CHORDS_INFO:
+            for num_signature, chord_signature in enumerate(chord_signatures):
+                if (scale & chord_signature) == chord_signature:
+                    print("Chord: {} on {}".format(chord_name, CHROMATIC_NOTES[(num_signature) % 12]))
 
     def draw_hexagon(self, color, label):
         self.ctx.move_to(self.hexagon_points[0][0], self.hexagon_points[0][1])
