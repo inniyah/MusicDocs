@@ -69,8 +69,6 @@ class HexagonalLayoutPic:
         # height of surface plus some border in pixels
         self.height = int(self.vnum * 3*D/4. + 2*D) + 1
 
-        self.field_colors = ((1, 0.5, 1), (0.5, 1, 1), (0.8, 0, 0.8), (0, 0.8, 0.8))
-
         self.hexagon_points = (
             ( math.sqrt(3)*D/4.,  D/4.),
             (                0.,  D/2.),
@@ -92,7 +90,7 @@ class HexagonalLayoutPic:
         self.ctx.close_path()
         self.ctx.set_source_rgb(0, 0, 0)
         self.ctx.stroke_preserve()
-        self.ctx.set_source_rgb(*self.field_colors[color])
+        self.ctx.set_source_rgb(*color)
         self.ctx.fill()
 
         text_extents = self.ctx.text_extents(str(label))
@@ -102,8 +100,35 @@ class HexagonalLayoutPic:
         self.ctx.set_font_size(11)
         self.ctx.show_text(str(label))
 
+    def compass_to_rgb(self, h, s=1, v=1):
+        h = float(h)
+        s = float(s)
+        v = float(v)
+        h60 = h / 60.0
+        h60f = math.floor(h60)
+        hi = int(h60f) % 6
+        f = h60 - h60f
+        p = v * (1 - s)
+        q = v * (1 - f * s)
+        t = v * (1 - (1 - f) * s)
+        r, g, b = 0, 0, 0
+        if hi == 0: r, g, b = v, t, p
+        elif hi == 1: r, g, b = q, v, p
+        elif hi == 2: r, g, b = p, v, t
+        elif hi == 3: r, g, b = p, q, v
+        elif hi == 4: r, g, b = t, p, v
+        elif hi == 5: r, g, b = v, p, q
+        return r, g, b
+
     def draw_pic(self, ctx):
         self.ctx = ctx
+
+        selected_notes = {
+            (0, 0): 0
+        }
+
+        triads = [
+        ]
 
         self.ctx.set_source_rgb(1, 1, 1)
         self.ctx.rectangle(0, 0, self.width, self.height)
@@ -113,17 +138,29 @@ class HexagonalLayoutPic:
 
         ix_offset = int(self.hnum/2)
         iy_offset = int(self.vnum/2)
+
         for vpos in range(self.vnum):
             hexagons_in_line = self.hnum + (vpos%2)
+
             for hpos in range(hexagons_in_line):
-                ix = int(hpos) - ix_offset
                 iy = int(vpos) - iy_offset
-                if vpos%2:
-                    n = (int(ix * 7 - (iy+1)/2 + 9) % 12)
-                else:
-                    n = (int(ix * 7 - iy/2) % 12)
+                ix = int(hpos) - ix_offset + iy//2
+                n = (int(ix * 7 - iy * 4) % 12)
+
                 self.ctx.translate(self.shift_x[0], self.shift_x[1])
-                self.draw_hexagon(self.notes[n] + 2*(iy != 0), f"{n} ({ix},{iy})")
+
+                try:
+                    color = self.compass_to_rgb(360. * n/12., 0.8)
+                    label = selected_notes[(ix, iy)]
+                except KeyError:
+                    label = f"{n} ({ix},{iy})"
+                    if self.notes[n]:
+                        color = self.compass_to_rgb(360. * n/12., 0.4)
+                    else:
+                        color = self.compass_to_rgb(360. * n/12., 0.1)
+
+                self.draw_hexagon(color, label)
+
             self.ctx.translate(-hexagons_in_line * self.shift_x[0], -hexagons_in_line * self.shift_x[1])
             self.ctx.translate((2*(vpos%2) - 1) * self.shift_y[0], self.shift_y[1])
 
