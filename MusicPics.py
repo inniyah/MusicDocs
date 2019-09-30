@@ -4,18 +4,20 @@
 import cairo
 import math
 
+SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)
+SCALE_MAJOR_MELODIC  = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<10)
+
 class HexagonalLayoutPic:
-    def __init__(self, D, side_fields = 7):
+    def __init__(self, D, scale=SCALE_MAJOR_DIATONIC, h = 4):
         self.ctx = None
+
+        self.notes = [(scale & 1<<r != 0) for r in range(12)]
 
         # diameter of hexagon in pixels
         self.D = D
 
-        #This is the number of the colored hexagons that make
-        # up the overall board that is actually hexagon comprised of small, colored ones
-        # number of fields along each side. Changing the vaue to 33 makes a lot of tiny
-        # hexagons on each side of the board.
-        self.side_fields = side_fields
+        self.vnum = h * 2 + 1
+        self.hnum = 13
 
         # vectorial distance to next hexagon in row
         self.shift_x = (math.sqrt(3)*D/2., 0)
@@ -24,30 +26,38 @@ class HexagonalLayoutPic:
         self.shift_y = (math.sqrt(3)*D/4., 3*D/4.)
 
         # width of surface plus some border in pixels
-        self.width = int((2*side_fields-1)*math.sqrt(3)*D/2.+3*D/4.)+1
+        self.width = int((self.hnum + 2) * math.sqrt(3)*D/2. + 3*D/4.) + 1
 
         # height of surface plus some border in pixels
-        self.height = int((2*side_fields-1)*3*D/4.+2*D)+1
+        self.height = int(self.vnum * 3*D/4. + 2*D) + 1
 
-        self.field_colors = ((1, 1, 1), (0, 0, 0), (1, 0, 0))
+        self.field_colors = ((1, 0.5, 1), (0.5, 1, 1), (0.8, 0, 0.8), (0, 0.8, 0.8))
 
-        self.p = (
-            (math.sqrt(3)*D/4., D/4.),
-            (0, D/2.),
-            (-math.sqrt(3)*D/4., D/4.),
+        self.hexagon_points = (
+            ( math.sqrt(3)*D/4.,  D/4.),
+            (                0.,  D/2.),
+            (-math.sqrt(3)*D/4.,  D/4.),
             (-math.sqrt(3)*D/4., -D/4.),
-            (0, -D/2.),
-            (math.sqrt(3)*D/4.,-D/4.)
+            (                0., -D/2.),
+            ( math.sqrt(3)*D/4., -D/4.)
         )
 
-    def hexagon(self, color):
-        for pair in self.p:
+    def draw_hexagon(self, color, label):
+        self.ctx.move_to(self.hexagon_points[0][0], self.hexagon_points[0][1])
+        for pair in self.hexagon_points:
             self.ctx.line_to(pair[0], pair[1])
         self.ctx.close_path()
-        self.ctx.set_source_rgb(0,0,0)
+        self.ctx.set_source_rgb(0, 0, 0)
         self.ctx.stroke_preserve()
-        self.ctx.set_source_rgb(*self.field_colors[color % 3])
+        self.ctx.set_source_rgb(*self.field_colors[color])
         self.ctx.fill()
+
+        text_extents = self.ctx.text_extents(str(label))
+        self.ctx.move_to(-text_extents.width/2, text_extents.height/2)
+        self.ctx.set_source_rgb(0.1, 0.1, 0.1)
+        self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        self.ctx.set_font_size(11)
+        self.ctx.show_text(str(label))
 
     def draw_pic(self, ctx):
         self.ctx = ctx
@@ -56,21 +66,29 @@ class HexagonalLayoutPic:
         self.ctx.rectangle(0, 0, self.width, self.height)
         self.ctx.fill()
 
-        fields_in_line = self.side_fields
-        increment, decreasing = 1, 0
-        self.ctx.translate((self.side_fields-1)*math.sqrt(3)*self.D/4., self.D)
+        self.ctx.translate(2. * math.sqrt(3) * self.D/4., self.D)
 
-        for j in range(2*self.side_fields-1):
-            if fields_in_line > 2*self.side_fields-2:
-                increment = -1
-            for i in range(fields_in_line):
+        ix_offset = int(self.hnum/2)
+        iy_offset = int(self.vnum/2)
+        for vpos in range(self.vnum):
+            hexagons_in_line = self.hnum + (vpos%2)
+            for hpos in range(hexagons_in_line):
+                ix = int(hpos) - ix_offset
+                iy = int(vpos) - iy_offset
+                if vpos%2:
+                    n = (int(ix * 7 - (iy+1)/2 + 9) % 12)
+                else:
+                    n = (int(ix * 7 - iy/2) % 12)
                 self.ctx.translate(self.shift_x[0], self.shift_x[1])
-                self.hexagon(i + j + decreasing)
-            self.ctx.translate(-fields_in_line*self.shift_x[0], -fields_in_line*self.shift_x[1])
-            self.ctx.translate(-increment*self.shift_y[0], self.shift_y[1])
-            if increment == -1:
-                decreasing += 1
-            fields_in_line += increment
+                self.draw_hexagon(self.notes[n] + 2*(iy != 0), f"{n} ({ix},{iy})")
+            self.ctx.translate(-hexagons_in_line * self.shift_x[0], -hexagons_in_line * self.shift_x[1])
+            self.ctx.translate((2*(vpos%2) - 1) * self.shift_y[0], self.shift_y[1])
+
+        self.ctx.set_source_rgb(0.1, 0.1, 0.1)
+        self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        self.ctx.set_font_size(13)
+        self.ctx.move_to(20, 30)
+        self.ctx.show_text("Hello, World!")
 
 class PianoOctavePic:
     def __init__(self, width, height):
@@ -94,7 +112,7 @@ class PianoOctavePic:
         self.ctx.fill()
         self.ctx.stroke()
 
-    def draw_pic(self, ctx, scale=(1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)):
+    def draw_pic(self, ctx, scale=SCALE_MAJOR_DIATONIC):
         self.ctx = ctx
 
         notes = [(scale & 1<<r != 0) for r in range(12)]
@@ -131,7 +149,7 @@ def main():
     from MusicDefs import MusicDefs
 
     pic = PianoOctavePic(width=400, height=200)
-    pic = HexagonalLayoutPic(D=33, side_fields=7)
+    pic = HexagonalLayoutPic(D=100)
 
     window = window.Window(width=pic.width, height=pic.height)
     #ft = font.load('Arial', 24)
