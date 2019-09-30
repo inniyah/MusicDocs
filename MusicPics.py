@@ -128,6 +128,10 @@ class HexagonalLayoutPic:
         }
 
         triads = [
+            ((0, 0, 0), (4, 0, -1), (7, 1,  0)), # Major triad
+            ((0, 0, 0), (3, 1,  1), (7, 1,  0)), # Minor triad
+            ((0, 0, 0), (4, 0, -1), (8, 0, -2)), # Augmented triad
+            ((0, 0, 0), (3, 1,  1), (8, 0, -2)), # Diminished triad
         ]
 
         self.ctx.set_source_rgb(1, 1, 1)
@@ -150,7 +154,7 @@ class HexagonalLayoutPic:
                 self.ctx.translate(self.shift_x[0], self.shift_x[1])
 
                 try:
-                    color = self.compass_to_rgb(360. * n/12., 0.8)
+                    color = self.compass_to_rgb(360. * n/12., 1.0)
                     label = selected_notes[(ix, iy)]
                 except KeyError:
                     label = f"{n} ({ix},{iy})"
