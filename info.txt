@@ -154,3 +154,5 @@ https://github.com/fomightez/cairo-jupyter
 https://github.com/stuaxo/ipython_cairo
 https://nedbatchelder.com/blog/201901/drawing_cairo_svg_in_a_jupyter_notebook.html
 https://pycairo.readthedocs.io
+https://bentamor.wordpress.com/category/gnulinux/python/pycairo-python-gnulinux/
+https://gist.github.com/stuaxo/4078780
