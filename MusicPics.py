@@ -130,23 +130,21 @@ def main():
 
     from MusicDefs import MusicDefs
 
-    WIDTH, HEIGHT = 400, 200
+    pic = PianoOctavePic(width=400, height=200)
 
-    window = window.Window(width=WIDTH, height=HEIGHT)
+    window = window.Window(width=pic.width, height=pic.height)
     #ft = font.load('Arial', 24)
     #text = font.Text(ft, 'Hello World')
 
     # create data shared by ImageSurface and Texture
-    data = (ctypes.c_ubyte * (WIDTH * HEIGHT * 4))()
-    stride = WIDTH * 4
-    surface = cairo.ImageSurface.create_for_data (data, cairo.FORMAT_ARGB32, WIDTH, HEIGHT, stride); 
-    texture = image.Texture.create_for_size(gl.GL_TEXTURE_2D, WIDTH, HEIGHT, gl.GL_RGBA)
-
-    piano_pic = PianoOctavePic(width=WIDTH, height=HEIGHT)
+    data = (ctypes.c_ubyte * (pic.width * pic.height * 4))()
+    stride = pic.width * 4
+    surface = cairo.ImageSurface.create_for_data (data, cairo.FORMAT_ARGB32, pic.width, pic.height, stride); 
+    texture = image.Texture.create_for_size(gl.GL_TEXTURE_2D, pic.width * pic.height, gl.GL_RGBA)
 
     def update_surface(dt, surface):
         ctx = cairo.Context(surface)
-        piano_pic.draw_piano(ctx)
+        pic.draw_piano(ctx)
 
     @window.event
     def on_draw():
@@ -155,17 +153,17 @@ def main():
         gl.glEnable(gl.GL_TEXTURE_2D)
 
         gl.glBindTexture(gl.GL_TEXTURE_2D, texture.id)
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, WIDTH, HEIGHT, 0, gl.GL_BGRA, gl.GL_UNSIGNED_BYTE, data)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA, pic.width, pic.height, 0, gl.GL_BGRA, gl.GL_UNSIGNED_BYTE, data)
 
         gl.glBegin(gl.GL_QUADS)
         gl.glTexCoord2f(0.0, 1.0)
         gl.glVertex2i(0, 0)
         gl.glTexCoord2f(1.0, 1.0)
-        gl.glVertex2i(WIDTH, 0)
+        gl.glVertex2i(pic.width, 0)
         gl.glTexCoord2f(1.0, 0.0)
-        gl.glVertex2i(WIDTH, HEIGHT)
+        gl.glVertex2i(pic.width, pic.height)
         gl.glTexCoord2f(0.0, 0.0)
-        gl.glVertex2i(0, HEIGHT)
+        gl.glVertex2i(0, pic.height)
         gl.glEnd()
 
         #text.draw()
