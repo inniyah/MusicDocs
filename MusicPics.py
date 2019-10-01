@@ -5,34 +5,34 @@ import cairo
 import math
 import queue
 
-SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)
+SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<11)
 SCALE_MAJOR_MELODIC  = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<10)
 
 CHORDS_INFO = [
     # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
-    [ [], (0, 4, 7, 11), "Major seventh Chord" ],
-    [ [], (0, 3, 7, 10), "Minor seventh Chord" ],
-    [ [], (0, 4, 7, 10), "Dominant seventh Chord" ],
-    [ [], (0, 3, 6,  9), "Diminished seventh Chord" ],
-    [ [], (0, 3, 6, 10), "Half-diminished seventh Chord" ],
-    [ [], (0, 3, 7, 11), "Minor major seventh Chord" ],
-    [ [], (0, 4, 8, 11), "Augmented major seventh Chord" ],
+    [ [], ((0, 0, 0), (4, 0, -1), (7, 1,  0), (11, 1, -1)), "Major seventh Chord" ],
+    [ [], ((0, 0, 0), (3, 1,  1), (7, 1,  0), (10, 2,  1)), "Minor seventh Chord" ],
+    [ [], ((0, 0, 0), (4, 0, -1), (7, 1,  0), (10, 2,  1)), "Dominant seventh Chord" ],
+    [ [], ((0, 0, 0), (3, 1,  1), (6, 2,  2), (9,  3,  0)), "Diminished seventh Chord" ],
+    [ [], ((0, 0, 0), (3, 1,  1), (6, 2,  2), (10, 2,  1)), "Half-diminished seventh Chord" ],
+    [ [], ((0, 0, 0), (3, 1,  1), (7, 1,  0), (11, 1, -1)), "Minor major seventh Chord" ],
+    [ [], ((0, 0, 0), (4, 0, -1), (8, 0, -2), (11, 1, -1)), "Augmented major seventh Chord" ],
 
     # Non-tertian seventh chords: constructed using augmented or diminished thirds
-    [ [], (0, 4, 8, 10), "Augmented minor seventh Chord" ],
-    [ [], (0, 3, 6, 11), "Diminished major seventh Chord" ],
-    [ [], (0, 4, 6, 10), "Dominant seventh flat five Chord" ],
-    [ [], (0, 4, 6, 11), "Major seventh flat five Chord" ],
+    [ [], ((0, 0, 0), (4, 0, -1), (8, 0, -2), (10, 2,  1)), "Augmented minor seventh Chord" ],
+    [ [], ((0, 0, 0), (3, 1,  1), (6, 2,  2), (11, 1, -1)), "Diminished major seventh Chord" ],
+    [ [], ((0, 0, 0), (4, 0, -1), (6, 2,  2), (10, 2,  1)), "Dominant seventh flat five Chord" ],
+    [ [], ((0, 0, 0), (4, 0, -1), (6, 2,  2), (11, 1, -1)), "Major seventh flat five Chord" ],
 
     # Primary triads
-    [ [], (0, 4, 7),  "Major Triad" ],
-    [ [], (0, 3, 7),  "Minor Triad" ],
-    [ [], (0, 3, 6),  "Diminished Triad" ],
-    [ [], (0, 4, 8),  "Augmented Triad" ],
+    [ [], ((0, 0, 0), (4, 0, -1), (7, 1,  0)),  "Major Triad" ],
+    [ [], ((0, 0, 0), (3, 1,  1), (7, 1,  0)),  "Minor Triad" ],
+    [ [], ((0, 0, 0), (3, 1,  1), (6, 2,  2)),  "Diminished Triad" ],
+    [ [], ((0, 0, 0), (4, 0, -1), (8, 0, -2)),  "Augmented Triad" ],
 
     # Suspended triads
-    [ [], (0, 2, 7),  "Sus2 Triad" ],
-    [ [], (0, 5, 7),  "Sus4 Triad" ],
+    [ [], ((0, 0, 0), (2,  2, 0), (7, 1,  0)),  "Sus2 Triad" ],
+    [ [], ((0, 0, 0), (5, -1, 0), (7, 1,  0)),  "Sus4 Triad" ],
 ]
 
 CHROMATIC_NOTES = ['C', 'Db/C#', 'D', 'Eb/D#', 'E', 'F', 'Gb/F#', 'G', 'Ab/G#', 'A', 'Bb/A#', 'B']
@@ -42,15 +42,15 @@ for chord_info in CHORDS_INFO:
         chord_info[0] = [0] * 12
         for i in range(0, 12):
             chord_mask = 0
-            for num_note in chord_info[1]:
+            for num_note, inc_x, inc_y in chord_info[1]:
                 chord_mask |= 1 << (i + num_note) % 12
             chord_info[0][i] = chord_mask
 
 class HexagonalLayoutPic:
-    def __init__(self, D, scale=SCALE_MAJOR_DIATONIC, h = 4):
+    def __init__(self, D, scale=SCALE_MAJOR_DIATONIC, tonic=1, h = 4):
         self.ctx = None
 
-        self.notes = [(scale & 1<<r != 0) for r in range(12)]
+        self.notes = [(scale & 1<<(r%12) != 0) for r in range(tonic*7, tonic*7 + 12)]
 
         # diameter of hexagon in pixels
         self.D = D
@@ -82,41 +82,46 @@ class HexagonalLayoutPic:
         for chord_signatures, chord_intervals, chord_name in CHORDS_INFO:
             for num_signature, chord_signature in enumerate(chord_signatures):
                 if (scale & chord_signature) == chord_signature:
-                    print("Chord: {} on {}".format(chord_name, CHROMATIC_NOTES[(num_signature) % 12]))
+                    print("Chord: {} on {}: {}".format(chord_name, CHROMATIC_NOTES[(num_signature) % 12], chord_intervals))
 
-        raw_triads = [
+        raw_chords = [
             [(0, 0, 0), (4, 0, -1), (7, 1,  0)], # Major triad
             [(0, 0, 0), (3, 1,  1), (7, 1,  0)], # Minor triad
             [(0, 0, 0), (4, 0, -1), (8, 0, -2)], # Augmented triad
             [(0, 0, 0), (3, 1,  1), (6, 2,  2)], # Diminished triad
         ]
 
-        triads = []
+        chords = []
 
-        base_x = 0
-        base_y = 0
-        for order in [0, 1, 2]:
-            for notes_info in raw_triads:
-                ordered_notes_info = [((n - notes_info[order][0]) % 12, x - notes_info[order][1], y - notes_info[order][2]) \
-                                         for (n, x, y) in (notes_info*2)[order:order+3]]
-                notes_in_scale = True
-                for inc_note, inc_x, inc_y in ordered_notes_info:
-                    note_value = self.get_note_from_coords(base_x + inc_x, base_y + inc_y)
-                    if not self.notes[note_value]:
-                        notes_in_scale = False
-                    #print(f"{inc_note}, {inc_x}, {inc_y}: {note_value} -> {self.notes[note_value]}")
-                print(f"{ordered_notes_info} -> {notes_in_scale}")
+        self.selected_notes = {}
 
-        print(triads)
+        notes_set = set()
+        for root_chord in raw_chords:
+            if self.check_chord(root_chord):
+                for base_n, base_x, base_y in root_chord:
 
-        self.selected_notes = {
-        }
+                    for order in range(3):
+                        for raw_chord in raw_chords:
+                            real_chord = [( (base_n + n - raw_chord[order][0]) % 12,
+                                             base_x + x - raw_chord[order][1],
+                                             base_y + y - raw_chord[order][2]
+                                          ) for (n, x, y) in (raw_chord*2)[order:order+3]]
+
+                            if self.check_chord(real_chord):
+                                print(f"{real_chord}")
+                                for n, x, y in real_chord:
+                                    self.selected_notes[(x, y)] = f"{n} ({x},{y})"
+                                    notes_set.add((n, x, y))
+
+        print(notes_set)
+
+        print(chords)
 
         notes_queue = queue.Queue()
         for (x, y) in [(0, 0), (1, 0), (-1, 0), (0, -1), (-1, -1), (1, 1), (0, 1)]:
             n = self.get_note_from_coords(x, y)
             if self.notes[n]:
-                self.selected_notes[(x, y)] = n
+                #self.selected_notes[(x, y)] = n
                 notes_queue.put((n, x, y))
 
         while not notes_queue.empty():
@@ -127,6 +132,16 @@ class HexagonalLayoutPic:
             except queue.Empty:
                 continue
             print(f"{n} ({x, y})")
+
+    def check_chord(self, chord, note=(0,0,0)):
+        base_note, base_x, base_y = note
+        notes_in_scale = True
+        for inc_note, inc_x, inc_y in chord:
+            note_value = (base_note + self.get_note_from_coords(base_x + inc_x, base_y + inc_y) % 12)
+            if not self.notes[note_value]:
+                notes_in_scale = False
+            #print(f"{inc_note}, {inc_x}, {inc_y}: {note_value} -> {self.notes[note_value]}")
+        return notes_in_scale
 
     def get_note_from_coords(self, x, y):
             return (int(x * 7 - y * 4) % 12)
@@ -194,13 +209,12 @@ class HexagonalLayoutPic:
                 try:
                     color = self.compass_to_rgb(360. * n/12., 1.0)
                     label = self.selected_notes[(ix, iy)]
-                    #label = f"{n} ({ix},{iy})"
                 except KeyError:
                     label = f"{n} ({ix},{iy})"
                     if self.notes[n]:
-                        color = self.compass_to_rgb(360. * n/12., 0.4)
+                        color = self.compass_to_rgb(360. * n/12., 0.2)
                     else:
-                        color = self.compass_to_rgb(360. * n/12., 0.1)
+                        color = self.compass_to_rgb(360. * n/12., 0.05)
 
                 self.draw_hexagon(color, label)
 
