@@ -3,6 +3,7 @@
 
 import cairo
 import math
+import queue
 
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)
 SCALE_MAJOR_MELODIC  = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<10)
@@ -83,6 +84,53 @@ class HexagonalLayoutPic:
                 if (scale & chord_signature) == chord_signature:
                     print("Chord: {} on {}".format(chord_name, CHROMATIC_NOTES[(num_signature) % 12]))
 
+        raw_triads = [
+            [(0, 0, 0), (4, 0, -1), (7, 1,  0)], # Major triad
+            [(0, 0, 0), (3, 1,  1), (7, 1,  0)], # Minor triad
+            [(0, 0, 0), (4, 0, -1), (8, 0, -2)], # Augmented triad
+            [(0, 0, 0), (3, 1,  1), (6, 2,  2)], # Diminished triad
+        ]
+
+        triads = []
+
+        base_x = 0
+        base_y = 0
+        for order in [0, 1, 2]:
+            for notes_info in raw_triads:
+                ordered_notes_info = [((n - notes_info[order][0]) % 12, x - notes_info[order][1], y - notes_info[order][2]) \
+                                         for (n, x, y) in (notes_info*2)[order:order+3]]
+                notes_in_scale = True
+                for inc_note, inc_x, inc_y in ordered_notes_info:
+                    note_value = self.get_note_from_coords(base_x + inc_x, base_y + inc_y)
+                    if not self.notes[note_value]:
+                        notes_in_scale = False
+                    #print(f"{inc_note}, {inc_x}, {inc_y}: {note_value} -> {self.notes[note_value]}")
+                print(f"{ordered_notes_info} -> {notes_in_scale}")
+
+        print(triads)
+
+        self.selected_notes = {
+        }
+
+        notes_queue = queue.Queue()
+        for (x, y) in [(0, 0), (1, 0), (-1, 0), (0, -1), (-1, -1), (1, 1), (0, 1)]:
+            n = self.get_note_from_coords(x, y)
+            if self.notes[n]:
+                self.selected_notes[(x, y)] = n
+                notes_queue.put((n, x, y))
+
+        while not notes_queue.empty():
+            try:
+                n, x, y = notes_queue.get()
+                #n, x, y = notes_queue.get(timeout=wait_timeout)
+                #n, x, y = notes_queue.get_nowait()
+            except queue.Empty:
+                continue
+            print(f"{n} ({x, y})")
+
+    def get_note_from_coords(self, x, y):
+            return (int(x * 7 - y * 4) % 12)
+
     def draw_hexagon(self, color, label):
         self.ctx.move_to(self.hexagon_points[0][0], self.hexagon_points[0][1])
         for pair in self.hexagon_points:
@@ -123,20 +171,6 @@ class HexagonalLayoutPic:
     def draw_pic(self, ctx):
         self.ctx = ctx
 
-        selected_notes = {
-        }
-
-        for (ix, iy) in [(0, 0), (1, 0), (-1, 0), (0, -1), (-1, -1), (1, 1), (0, 1)]:
-            n = (int(ix * 7 - iy * 4) % 12)
-            if self.notes[n]:
-                selected_notes[(ix, iy)] = n
-
-        triads = [
-            ((0, 0, 0), (4, 0, -1), (7, 1,  0)), # Major triad
-            ((0, 0, 0), (3, 1,  1), (7, 1,  0)), # Minor triad
-            ((0, 0, 0), (4, 0, -1), (8, 0, -2)), # Augmented triad
-            ((0, 0, 0), (3, 1,  1), (8, 0, -2)), # Diminished triad
-        ]
 
         self.ctx.set_source_rgb(1, 1, 1)
         self.ctx.rectangle(0, 0, self.width, self.height)
@@ -153,13 +187,14 @@ class HexagonalLayoutPic:
             for hpos in range(hexagons_in_line):
                 iy = int(vpos) - iy_offset
                 ix = int(hpos) - ix_offset + iy//2
-                n = (int(ix * 7 - iy * 4) % 12)
+                n = self.get_note_from_coords(ix, iy)
 
                 self.ctx.translate(self.shift_x[0], self.shift_x[1])
 
                 try:
                     color = self.compass_to_rgb(360. * n/12., 1.0)
-                    label = selected_notes[(ix, iy)]
+                    label = self.selected_notes[(ix, iy)]
+                    #label = f"{n} ({ix},{iy})"
                 except KeyError:
                     label = f"{n} ({ix},{iy})"
                     if self.notes[n]:

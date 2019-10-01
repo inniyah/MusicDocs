@@ -32,6 +32,12 @@ class MusicDefs:
     # Augmented chords sound anxious and suspenseful.
     TRIAD_AUGMENTED  = NOTE_ROOT + INTVL_MAJOR_THIRD + INTVL_AUGMENTED_FIFTH
 
+    TRIAD_INVERSION_NONE = 0
+    # First inversion: the third of the chord is the bass note
+    TRIAD_INVERSION_FIRST = 1
+    # Second inversion: the fifth of the chord is the bass note
+    TRIAD_INVERSION_SECOND= 2
+
     # When creating a chord you generally¹ stack thirds on top of each other and
     # name the chord after the number of steps from the root note to the highest added note.
 

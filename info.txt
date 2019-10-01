@@ -62,11 +62,13 @@ http://openmusictheory.com/triads.html
 
 -----
 
-https://gist.github.com/endolith/3066664
+https://gist.github.com/endolith/3066664    <-
 https://soundcloud.com/endolith/6-harmonics-sethares-plot
 http://sethares.engr.wisc.edu/comprog.html
 http://sethares.engr.wisc.edu/consemi.html
 http://www.acousticslab.org/learnmoresra/moremodel.html
+https://www.wikiwand.com/en/Consonance_and_dissonance    <-
+http://www.ndr.hu/sound/INDEX.html
 
 -----
 
