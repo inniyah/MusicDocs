@@ -124,8 +124,12 @@ class HexagonalLayoutPic:
         self.ctx = ctx
 
         selected_notes = {
-            (0, 0): 0
         }
+
+        for (ix, iy) in [(0, 0), (1, 0), (-1, 0), (0, -1), (-1, -1), (1, 1), (0, 1)]:
+            n = (int(ix * 7 - iy * 4) % 12)
+            if self.notes[n]:
+                selected_notes[(ix, iy)] = n
 
         triads = [
             ((0, 0, 0), (4, 0, -1), (7, 1,  0)), # Major triad
