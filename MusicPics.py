@@ -42,7 +42,8 @@ CHORDS_INFO = [
     #[ [], ((0, 0, 0), (5, -1, 0), (7, 1,  0)),  "Sus4 Triad" ],
 ]
 
-CHROMATIC_NOTES = ['C', 'Db/C#', 'D', 'Eb/D#', 'E', 'F', 'Gb/F#', 'G', 'Ab/G#', 'A', 'Bb/A#', 'B']
+#NOTE_NAMES = ['C', 'Db/C#', 'D', 'Eb/D#', 'E', 'F', 'Gb/F#', 'G', 'Ab/G#', 'A', 'Bb/A#', 'B']
+NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
 
 for chord_info in CHORDS_INFO:
     if not chord_info[0]:
@@ -103,7 +104,7 @@ class HexagonalLayoutPic:
                             if self.check_chord(real_triad):
                                 #print(f"{real_triad}")
                                 for n, x, y in real_triad:
-                                    self.selected_notes[(x, y)] = f"{n} ({x},{y})"
+                                    self.selected_notes[(x, y)] = f"{NOTE_NAMES[n]} ({n})"
                                     notes_set.add((n, x, y))
 
         print(f"Highlighted notes: {sorted(notes_set, key=lambda tup: tup[0])}")
@@ -113,7 +114,7 @@ class HexagonalLayoutPic:
         #for chord_signatures, chord_intervals, chord_name in CHORDS_INFO:
         #    for note_num, chord_signature in enumerate(chord_signatures):
         #        if (scale & chord_signature) == chord_signature:
-        #            print("Chord: {} on {}: {}".format(chord_name, CHROMATIC_NOTES[(note_num) % 12], chord_intervals))
+        #            print("Chord: {} on {}: {}".format(chord_name, NOTE_NAMES[(note_num) % 12], chord_intervals))
 
         for note_num, note_x, note_y  in sorted(notes_set, key=lambda tup: tup[0]):
             for chord_signatures, chord_intervals, chord_name in CHORDS_INFO:
@@ -124,7 +125,7 @@ class HexagonalLayoutPic:
                                  note_y + y
                               ) for (n, x, y) in chord_intervals]
                 if self.check_chord(real_chord):
-                    print("Chord: {} on {}: {}".format(chord_name, CHROMATIC_NOTES[(note_num) % 12], real_chord))
+                    print("Chord: {} on {}: {}".format(chord_name, NOTE_NAMES[(note_num) % 12], real_chord))
 
                     chords.append(real_chord)
                     #for n, x, y in real_chord:
@@ -162,27 +163,69 @@ class HexagonalLayoutPic:
     def get_note_from_coords(self, x, y):
             return (int(x * 7 - y * 4) % 12)
 
-    def draw_hexagon(self, color, label):
+    def draw_hexagon(self, note, color, label):
+        self.ctx.save()
+
         self.ctx.move_to(self.hexagon_points[0][0], self.hexagon_points[0][1])
         for pair in self.hexagon_points:
             self.ctx.line_to(pair[0], pair[1])
         self.ctx.close_path()
-        self.ctx.set_source_rgb(0, 0, 0)
-        self.ctx.stroke_preserve()
+
         self.ctx.set_source_rgb(*color)
         self.ctx.fill()
 
-        text_extents = self.ctx.text_extents(str(label))
-        self.ctx.move_to(-text_extents.width/2, text_extents.height/2)
+        self.ctx.move_to(self.hexagon_points[0][0], self.hexagon_points[0][1])
+        for pair in self.hexagon_points:
+            self.ctx.line_to(pair[0], pair[1])
+        self.ctx.close_path()
+
+        self.ctx.set_source_rgb(0, 0, 0)
+        self.ctx.set_line_width(0.5)
+        self.ctx.stroke()
+
+        self.ctx.set_source_rgb(0.3, 0.3, 0.3)
+        self.ctx.arc(0, 0, self.D * .35, 0, 2. * math.pi)
+        self.ctx.set_line_width(1.0)
+        self.ctx.stroke()
+
+        for n in range(0,12):
+            angle = 2/12 * math.pi * n
+            rad_i = self.D * .32
+            rad_o = self.D * .35
+            self.ctx.move_to(rad_i * math.sin(angle), -rad_i * math.cos(angle))
+            self.ctx.line_to(rad_o * math.sin(angle), -rad_o * math.cos(angle))
+        self.ctx.stroke()
+
+        self.ctx.set_source_rgb(0., 0., 0.)
+        angle = 2/12 * math.pi * ((note*7)%12)
+        self.ctx.arc(rad_o * math.sin(angle), -rad_o * math.cos(angle), self.D * .03, 0, 2. * math.pi)
+        self.ctx.fill()
+
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         self.ctx.set_font_size(11)
+        text_extents = self.ctx.text_extents(str(label))
+        self.ctx.move_to(-text_extents.width/2., text_extents.height/2.)
         self.ctx.show_text(str(label))
 
-    def compass_to_rgb(self, h, s=1., v=1.):
-        h = float(h)
-        s = float(s)
-        v = float(v)
+        self.ctx.restore()
+
+    def draw_circle_of_fifths(self):
+        self.ctx.save()
+
+        self.ctx.set_source_rgb(1, 0, 0)
+        self.ctx.set_line_width(0.06)
+        self.ctx.arc(0, 0, self.D * .4, 0, 2. * math.pi)
+
+        self.ctx.set_line_width(0.04)
+        self.ctx.stroke()
+
+        self.ctx.restore()
+
+    def compass_to_rgb(self, hue, saturation=1., value=1.):
+        h = float(hue)
+        s = float(saturation)
+        v = float(value)
         h60 = h / 60.0
         h60f = math.floor(h60)
         hi = int(h60f) % 6
@@ -199,12 +242,13 @@ class HexagonalLayoutPic:
         elif hi == 5: r, g, b = v, p, q
         return r, g, b
 
-    def get_color_from_note(self, note, s=1.0):
-        return self.compass_to_rgb(360. * (note%12)/12., s)
+    def get_color_from_note(self, note, saturation=1., value=1.):
+        if note == -1:
+            return (0.9, 0.9, 0.9)
+        return self.compass_to_rgb(360. * ((note*7)%12)/12., saturation, value)
 
     def draw_pic(self, ctx):
         self.ctx = ctx
-
 
         self.ctx.set_source_rgb(1, 1, 1)
         self.ctx.rectangle(0, 0, self.width, self.height)
@@ -229,13 +273,14 @@ class HexagonalLayoutPic:
                     color = self.get_color_from_note(n, 1.0)
                     label = self.selected_notes[(ix, iy)]
                 except KeyError:
-                    label = f"{n} ({ix},{iy})"
+                    label = f"{NOTE_NAMES[n]} ({n})"
                     if self.notes[n]:
                         color = self.get_color_from_note(n, 0.2)
                     else:
                         color = self.get_color_from_note(n, 0.02)
 
-                self.draw_hexagon(color, label)
+                self.draw_hexagon(n, color, label)
+                self.draw_circle_of_fifths()
 
             self.ctx.translate(-hexagons_in_line * self.shift_x[0], -hexagons_in_line * self.shift_x[1])
             self.ctx.translate((2*(vpos%2) - 1) * self.shift_y[0], self.shift_y[1])
