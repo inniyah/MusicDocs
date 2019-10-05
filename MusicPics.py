@@ -8,12 +8,12 @@ import queue
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<11)
 SCALE_MAJOR_MELODIC  = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<10)
 
-MAIN_TRIADS = [
-    [(0, 0, 0), (4, 0, -1), (7, 1,  0)], # Major triad
-    [(0, 0, 0), (3, 1,  1), (7, 1,  0)], # Minor triad
-    [(0, 0, 0), (4, 0, -1), (8, 0, -2)], # Augmented triad
-    [(0, 0, 0), (3, 1,  1), (6, 2,  2)], # Diminished triad
-]
+#MAIN_TRIADS = [
+#    [(0, 0, 0), (4, 0, -1), (7, 1,  0)], # Major triad
+#    [(0, 0, 0), (3, 1,  1), (7, 1,  0)], # Minor triad
+#    [(0, 0, 0), (4, 0, -1), (8, 0, -2)], # Augmented triad
+#    [(0, 0, 0), (3, 1,  1), (6, 2,  2)], # Diminished triad
+#]
 
 CHORDS_INFO = [
     # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
@@ -89,25 +89,65 @@ class HexagonalLayoutPic:
 
         self.selected_notes = {}
 
-        notes_set = set()
-        for root_triad in MAIN_TRIADS:
-            if self.check_chord(root_triad):
-                for base_n, base_x, base_y in root_triad:
+        notes_queue = queue.Queue()
+        notes_queue.put((0, 0, 0))
+        while not notes_queue.empty():
+            try:
+                n, x, y = notes_queue.get()
+                #n, x, y = notes_queue.get(timeout=wait_timeout)
+                #n, x, y = notes_queue.get_nowait()
+            except queue.Empty:
+                continue
+            print(f"{n} ({x, y})")
+            self.selected_notes[(x, y)] = f"{NOTE_NAMES[n]} ({n})"
+            u = 2*x-y
+            if u < 5:
+                if self.notes[(n+4)%12] and y>0:
+                    notes_queue.put(((n+4)%12, x, y-1))
+                elif self.notes[(n+3)%12]:
+                    notes_queue.put(((n+3)%12, x+1, y+1))
+                elif self.notes[(n+4)%12]:
+                    notes_queue.put(((n+4)%12, x, y-1))
 
-                    for order in range(3):
-                        for raw_triad in MAIN_TRIADS:
-                            real_triad = [( (base_n + n - raw_triad[order][0]) % 12,
-                                             base_x + x - raw_triad[order][1],
-                                             base_y + y - raw_triad[order][2]
-                                          ) for (n, x, y) in (raw_triad*2)[order:order+3]]
+        notes_queue = queue.Queue()
+        notes_queue.put((0, 0, 0))
+        while not notes_queue.empty():
+            try:
+                n, x, y = notes_queue.get()
+                #n, x, y = notes_queue.get(timeout=wait_timeout)
+                #n, x, y = notes_queue.get_nowait()
+            except queue.Empty:
+                continue
+            print(f"{n} ({x, y})")
+            self.selected_notes[(x, y)] = f"{NOTE_NAMES[n]} ({n})"
+            u = 2*x-y
+            if u > -3:
+                if self.notes[(n+9)%12] and y>0:
+                    notes_queue.put(((n+9)%12, x-1, y-1))
+                elif self.notes[(n+8)%12]:
+                    notes_queue.put(((n+8)%12, x, y+1))
+                elif self.notes[(n+9)%12]:
+                    notes_queue.put(((n+9)%12, x-1, y-1))
 
-                            if self.check_chord(real_triad):
-                                #print(f"{real_triad}")
-                                for n, x, y in real_triad:
-                                    self.selected_notes[(x, y)] = f"{NOTE_NAMES[n]} ({n})"
-                                    notes_set.add((n, x, y))
+        #notes_set = set()
+        #for root_triad in MAIN_TRIADS:
+        #    if self.check_chord(root_triad):
+        #        for base_n, base_x, base_y in root_triad:
 
-        print(f"Highlighted notes: {sorted(notes_set, key=lambda tup: tup[0])}")
+        #            for order in range(3):
+        #                for raw_triad in MAIN_TRIADS:
+        #                    real_triad = [( (base_n + n - raw_triad[order][0]) % 12,
+        #                                     base_x + x - raw_triad[order][1],
+        #                                     base_y + y - raw_triad[order][2]
+        #                                  ) for (n, x, y) in (raw_triad*2)[order:order+3]]
+
+        #                    if self.check_chord(real_triad):
+        #                        #print(f"{real_triad}")
+        #                        for n, x, y in real_triad:
+        #                            self.selected_notes[(x, y)] = f"{NOTE_NAMES[n]} ({n})"
+        #                            notes_set.add((n, x, y))
+
+        #print(f"Highlighted notes: {sorted(notes_set, key=lambda tup: tup[0])}")
 
         chords = []
 
@@ -116,21 +156,21 @@ class HexagonalLayoutPic:
         #        if (scale & chord_signature) == chord_signature:
         #            print("Chord: {} on {}: {}".format(chord_name, NOTE_NAMES[(note_num) % 12], chord_intervals))
 
-        for note_num, note_x, note_y  in sorted(notes_set, key=lambda tup: tup[0]):
-            for chord_signatures, chord_intervals, chord_name in CHORDS_INFO:
-                chord_signature = chord_signatures[note_num]
+        #for note_num, note_x, note_y  in sorted(notes_set, key=lambda tup: tup[0]):
+        #    for chord_signatures, chord_intervals, chord_name in CHORDS_INFO:
+        #        chord_signature = chord_signatures[note_num]
 
-                real_chord = [( (note_num + n) % 12,
-                                 note_x + x,
-                                 note_y + y
-                              ) for (n, x, y) in chord_intervals]
-                if self.check_chord(real_chord):
-                    print("Chord: {} on {}: {}".format(chord_name, NOTE_NAMES[(note_num) % 12], real_chord))
+        #        real_chord = [( (note_num + n) % 12,
+        #                         note_x + x,
+        #                         note_y + y
+        #                      ) for (n, x, y) in chord_intervals]
+        #        if self.check_chord(real_chord):
+        #            print("Chord: {} on {}: {}".format(chord_name, NOTE_NAMES[(note_num) % 12], real_chord))
 
-                    chords.append(real_chord)
-                    #for n, x, y in real_chord:
-                    #    self.selected_notes[(x, y)] = f"{n} ({x},{y})"
-                    #    notes_set.add((n, x, y))
+        #            chords.append(real_chord)
+        #            #for n, x, y in real_chord:
+        #            #    self.selected_notes[(x, y)] = f"{n} ({x},{y})"
+        #            #    notes_set.add((n, x, y))
 
         #print(chords)
 
@@ -163,7 +203,7 @@ class HexagonalLayoutPic:
     def get_note_from_coords(self, x, y):
             return (int(x * 7 - y * 4) % 12)
 
-    def draw_hexagon(self, note, color, label):
+    def draw_hexagon(self, note, color, label, sublabel="", bold=False):
         self.ctx.save()
 
         self.ctx.move_to(self.hexagon_points[0][0], self.hexagon_points[0][1])
@@ -203,10 +243,15 @@ class HexagonalLayoutPic:
 
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        self.ctx.set_font_size(11)
+        self.ctx.set_font_size(12)
         text_extents = self.ctx.text_extents(str(label))
         self.ctx.move_to(-text_extents.width/2., text_extents.height/2.)
         self.ctx.show_text(str(label))
+
+        text_extents = self.ctx.text_extents(str(sublabel))
+        self.ctx.move_to(-text_extents.width/2., text_extents.height*3.5/2.)
+        self.ctx.set_font_size(10)
+        self.ctx.show_text(str(sublabel))
 
         self.ctx.restore()
 
@@ -256,8 +301,8 @@ class HexagonalLayoutPic:
 
         self.ctx.translate(2. * math.sqrt(3) * self.D/4., self.D)
 
-        ix_offset = int(self.hnum/2)
-        iy_offset = int(self.vnum/2)
+        ix_offset = int(self.hnum//2)
+        iy_offset = int(self.vnum//2)
 
         for vpos in range(self.vnum):
             hexagons_in_line = self.hnum + (vpos%2)
@@ -275,21 +320,21 @@ class HexagonalLayoutPic:
                 except KeyError:
                     label = f"{NOTE_NAMES[n]} ({n})"
                     if self.notes[n]:
-                        color = self.get_color_from_note(n, 0.2)
+                        color = self.get_color_from_note(n, 0.15)
                     else:
                         color = self.get_color_from_note(n, 0.02)
 
-                self.draw_hexagon(n, color, label)
+                self.draw_hexagon(n, color, label, f"({ix}, {iy})")
                 self.draw_circle_of_fifths()
 
             self.ctx.translate(-hexagons_in_line * self.shift_x[0], -hexagons_in_line * self.shift_x[1])
             self.ctx.translate((2*(vpos%2) - 1) * self.shift_y[0], self.shift_y[1])
 
-        self.ctx.set_source_rgb(0.1, 0.1, 0.1)
-        self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        self.ctx.set_font_size(13)
-        self.ctx.move_to(20, 30)
-        self.ctx.show_text("Hello, World!")
+        #self.ctx.set_source_rgb(0.1, 0.1, 0.1)
+        #self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        #self.ctx.set_font_size(13)
+        #self.ctx.move_to(20, 30)
+        #self.ctx.show_text("Hello, World!")
 
 class PianoOctavePic:
     def __init__(self, width, height):
@@ -349,8 +394,8 @@ def main():
 
     from MusicDefs import MusicDefs
 
-    pic = PianoOctavePic(width=400, height=200)
-    pic = HexagonalLayoutPic(D=100, scale=SCALE_MAJOR_DIATONIC, tonic=1)
+    #pic = PianoOctavePic(width=400, height=200)
+    pic = HexagonalLayoutPic(D=100, scale=SCALE_MAJOR_DIATONIC, tonic=1, h=2)
 
     window = window.Window(width=pic.width, height=pic.height)
     #ft = font.load('Arial', 24)
