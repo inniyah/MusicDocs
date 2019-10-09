@@ -155,6 +155,10 @@ The melodic modes have a natural ordering that parallels the diatonic modes. The
 https://www.researchgate.net/publication/259731533_Emotional_Connotations_of_Diatonic_Modes
 http://mp.ucpress.edu/content/30/3/237.full.pdf+html
 
+# Key-finding algorithm: http://rnhart.net/articles/key-finding/
+# keycor manpage: http://extras.humdrum.org/man/keycor/
+http://sig.sapp.org/examples/museinfo/humdrum/keycor.cpp
+
 -----
 
 https://github.com/fomightez/cairo-jupyter
