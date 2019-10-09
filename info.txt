@@ -152,6 +152,9 @@ To move from a melodic mode to an adjacent melodic mode you need to change 2 not
 
 The melodic modes have a natural ordering that parallels the diatonic modes. The melodic modes can be thought of as alternate pathways for shifting between diatonic modes.
 
+https://www.researchgate.net/publication/259731533_Emotional_Connotations_of_Diatonic_Modes
+http://mp.ucpress.edu/content/30/3/237.full.pdf+html
+
 -----
 
 https://github.com/fomightez/cairo-jupyter
