@@ -44,14 +44,28 @@ CHORDS_INFO = [
 
 NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
 
+def seq_floats(start, stop, step=1):
+    stop = stop - step;
+    number = int(round((stop - start)/float(step)))
+
+    if number > 1:
+        return([start + step*i for i in range(number+1)])
+
+    elif number == 1:
+        return([start])
+
+    else:
+        return([])
+
 class TestPic:
     def __init__(self, D, scale=SCALE_MAJOR_DIATONIC, tonic=0):
         self.ctx = None
 
         self.notes = [(scale & 1<<(r%12) != 0) for r in range(tonic*7, tonic*7 + 12)]
 
-        self.width = 1000
-        self.height = 600
+        self.width = 1200
+        self.height = 800
+        self.step = 30
 
     def check_chord(self, chord, note=(0,0,0)):
         base_note, base_x, base_y = note
@@ -67,10 +81,9 @@ class TestPic:
         return (int(u * 7 + v * 4) % 12)
 
     def get_position_from_coords(self, u, v):
-        step = 10.
         x = 7 * u + 4 * v
         y = - 4 * v - u
-        return (step * x, step * y * math.sqrt(5.))
+        return (self.step * x / math.sqrt(5.), self.step * y)
 
     def draw_circle_of_fifths(self):
         self.ctx.save()
@@ -115,18 +128,18 @@ class TestPic:
 
         color = self.get_color_from_note(note, 1. if self.notes[note] else 0.1)
         self.ctx.set_source_rgb(*color)
-        self.ctx.arc(x, y, 15, 0, 2. * math.pi)
+        self.ctx.arc(x, y, 12, 0, 2. * math.pi)
         self.ctx.fill()
 
         self.ctx.set_source_rgb(0.3, 0.3, 0.3)
-        self.ctx.arc(x, y, 15, 0, 2. * math.pi)
+        self.ctx.arc(x, y, 12, 0, 2. * math.pi)
         self.ctx.set_line_width(2.0)
         self.ctx.stroke()
 
         label = NOTE_NAMES[note]
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        self.ctx.set_font_size(12)
+        self.ctx.set_font_size(10)
         text_extents = self.ctx.text_extents(str(label))
         self.ctx.move_to(x - text_extents.width/2., y + text_extents.height/2.)
         self.ctx.show_text(str(label))
@@ -148,17 +161,38 @@ class TestPic:
 
         self.ctx.translate(self.width // 2, self.height // 2)
 
-        for v in range(-3, 4):
-            for u in range(-2 - v//2 - 5, 3 - v // 2 + 5):
-                note = self.get_note_from_coords(u, v)
-                x, y = self.get_position_from_coords(u, v)
-                color = self.get_color_from_note(note, 0.3)
+#        for v in range(-3, 4):
+#            for u in range(-2 - v//2 - 5, 3 - v // 2 + 5):
+#                note = self.get_note_from_coords(u, v)
+#                x, y = self.get_position_from_coords(u, v)
+#                self.ctx.set_source_rgb(0.8, 0.8, 0.8)
+#                self.ctx.move_to(self.width/2, y)
+#                self.ctx.line_to(-self.width/2, y)
+#                self.ctx.stroke()
+#                self.ctx.move_to(x, self.height/2)
+#                self.ctx.line_to(x, -self.height/2)
+#                self.ctx.stroke()
+
+        n = 3
+        for y in seq_floats(0, self.height/2 + self.step, self.step):
+                color = self.get_color_from_note(n, 1. if self.notes[n] else 0.05)
                 self.ctx.set_source_rgb(*color)
                 self.ctx.move_to(self.width/2, y)
                 self.ctx.line_to(-self.width/2, y)
+
+                color = self.get_color_from_note(11-n, 1. if self.notes[(11-n)%12] else 0.05)
+                self.ctx.set_source_rgb(*color)
+                self.ctx.move_to(self.width/2, -y)
+                self.ctx.line_to(-self.width/2, -y)
                 self.ctx.stroke()
+                n = (n + 7) % 12
+
+        for x in seq_floats(0, self.width/2 + self.step / math.sqrt(5.), self.step / math.sqrt(5.)):
+                self.ctx.set_source_rgb(0.8, 0.8, 0.8)
                 self.ctx.move_to(x, self.height/2)
                 self.ctx.line_to(x, -self.height/2)
+                self.ctx.move_to(-x, self.height/2)
+                self.ctx.line_to(-x, -self.height/2)
                 self.ctx.stroke()
 
         for v in range(-3, 4):
@@ -167,6 +201,7 @@ class TestPic:
                 x, y = self.get_position_from_coords(u, v)
                 #if v > 0:
                 #    y += 10 * 27
+                y = ((19 + y/self.step) % 24) * self.step - 11 * self.step
                 self.draw_note(note, x, y)
 
         #self.ctx.set_source_rgb(0.1, 0.1, 0.1)
