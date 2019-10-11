@@ -4,6 +4,7 @@
 import cairo
 import math
 import queue
+import sys
 
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<11)
 SCALE_MAJOR_MELODIC  = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<10)
@@ -44,6 +45,9 @@ CHORDS_INFO = [
 
 NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
 
+NOTE_MIDI_A4 = 69
+NOTE_MIDI_C4 = 60
+
 def seq_floats(start, stop, step=1):
     stop = stop - step;
     number = int(round((stop - start)/float(step)))
@@ -65,7 +69,10 @@ class TestPic:
 
         self.width = 1200
         self.height = 800
-        self.step = 30
+        self.vstep = 14. * math.sqrt(5.)
+        self.hstep = 14.
+
+        self.root = NOTE_MIDI_C4
 
     def check_chord(self, chord, note=(0,0,0)):
         base_note, base_x, base_y = note
@@ -76,14 +83,6 @@ class TestPic:
                 notes_in_scale = False
             #print(f"{inc_note}, {inc_x}, {inc_y}: {note_value} -> {self.notes[note_value]}")
         return notes_in_scale
-
-    def get_note_from_coords(self, u, v):
-        return (int(u * 7 + v * 4) % 12)
-
-    def get_position_from_coords(self, u, v):
-        x = 7 * u + 4 * v
-        y = - 4 * v - u
-        return (self.step * x / math.sqrt(5.), self.step * y)
 
     def draw_circle_of_fifths(self):
         self.ctx.save()
@@ -144,12 +143,6 @@ class TestPic:
         self.ctx.move_to(x - text_extents.width/2., y + text_extents.height/2.)
         self.ctx.show_text(str(label))
 
-        #sublabel = f"({note})"
-        #text_extents = self.ctx.text_extents(str(sublabel))
-        #self.ctx.move_to(x - text_extents.width/2., y + text_extents.height*3.5/2.)
-        #self.ctx.set_font_size(10)
-        #self.ctx.show_text(str(sublabel))
-
         self.ctx.restore()
 
     def draw_pic(self, ctx):
@@ -161,54 +154,25 @@ class TestPic:
 
         self.ctx.translate(self.width // 2, self.height // 2)
 
-#        for v in range(-3, 4):
-#            for u in range(-2 - v//2 - 5, 3 - v // 2 + 5):
-#                note = self.get_note_from_coords(u, v)
-#                x, y = self.get_position_from_coords(u, v)
-#                self.ctx.set_source_rgb(0.8, 0.8, 0.8)
-#                self.ctx.move_to(self.width/2, y)
-#                self.ctx.line_to(-self.width/2, y)
-#                self.ctx.stroke()
-#                self.ctx.move_to(x, self.height/2)
-#                self.ctx.line_to(x, -self.height/2)
-#                self.ctx.stroke()
+        for note in range(int(self.width / self.hstep) - 1):
+            x = self.hstep * (1 + note) - self.width / 2.
+            self.ctx.set_source_rgb(0.8, 0.8, 0.8)
+            self.ctx.move_to(x, self.height/2)
+            self.ctx.line_to(x, -self.height/2)
+            self.ctx.stroke()
 
-        n = 3
-        for y in seq_floats(0, self.height/2 + self.step, self.step):
-                color = self.get_color_from_note(n, 1. if self.notes[n] else 0.05)
-                self.ctx.set_source_rgb(*color)
-                self.ctx.move_to(self.width/2, y)
-                self.ctx.line_to(-self.width/2, y)
+        for note in range(24):
+            y = self.height / 2 - self.hstep - ((note * 7 + 4) % 24) * self.vstep
+            color = self.get_color_from_note(note, 1. if self.notes[note % 12] else 0.05)
+            self.ctx.set_source_rgb(*color)
+            self.ctx.move_to(self.width/2, y)
+            self.ctx.line_to(-self.width/2, y)
+            self.ctx.stroke()
 
-                color = self.get_color_from_note(11-n, 1. if self.notes[(11-n)%12] else 0.05)
-                self.ctx.set_source_rgb(*color)
-                self.ctx.move_to(self.width/2, -y)
-                self.ctx.line_to(-self.width/2, -y)
-                self.ctx.stroke()
-                n = (n + 7) % 12
-
-        for x in seq_floats(0, self.width/2 + self.step / math.sqrt(5.), self.step / math.sqrt(5.)):
-                self.ctx.set_source_rgb(0.8, 0.8, 0.8)
-                self.ctx.move_to(x, self.height/2)
-                self.ctx.line_to(x, -self.height/2)
-                self.ctx.move_to(-x, self.height/2)
-                self.ctx.line_to(-x, -self.height/2)
-                self.ctx.stroke()
-
-        for v in range(-3, 4):
-            for u in range(-2 - v//2 - 5, 3 - v // 2 + 5):
-                note = self.get_note_from_coords(u, v)
-                x, y = self.get_position_from_coords(u, v)
-                #if v > 0:
-                #    y += 10 * 27
-                y = ((19 + y/self.step) % 24) * self.step - 11 * self.step
-                self.draw_note(note, x, y)
-
-        #self.ctx.set_source_rgb(0.1, 0.1, 0.1)
-        #self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        #self.ctx.set_font_size(13)
-        #self.ctx.move_to(20, 30)
-        #self.ctx.show_text("Hello, World!")
+        for note in range(int(self.width / self.hstep) - 1):
+            x = self.hstep * (1 + note) - self.width / 2.
+            y = self.height / 2 - self.hstep - ((note * 7 + 4) % 24) * self.vstep
+            self.draw_note(note, x, y)
 
 def main():
     import ctypes
