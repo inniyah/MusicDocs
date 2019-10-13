@@ -94,6 +94,7 @@ class TestPic:
 
         self.base_note = NOTE_MIDI_C4 - 12 * 2
         self.pressed_notes = [ 0 ] * 128
+        self.pressed_classes = [ 0 ] * 12
 
     def check_chord(self, chord, note=(0,0,0)):
         base_note, base_x, base_y = note
@@ -147,6 +148,9 @@ class TestPic:
         x = self.hstep * (1 + n) - self.width / 2.
         y = self.height / 2 - self.hstep - ((n * 7 + 4) % 24) * self.vstep
 
+        R = [ 14, 10, 12, 10, 14, 14, 10, 14, 10, 12, 10, 12 ]
+        r = R[note]
+
         is_pressed = (self.pressed_notes[self.base_note + n] != 0)
 
         self.ctx.save()
@@ -156,19 +160,24 @@ class TestPic:
         else:
             color = self.get_color_from_note(note, .1)
         self.ctx.set_source_rgb(*color)
-        self.ctx.arc(x, y, 12, 0, 2. * math.pi)
+        self.ctx.arc(x, y, r, 0, 2. * math.pi)
         self.ctx.fill()
 
         if self.notes[note] or is_pressed:
             self.ctx.set_source_rgb(0.3, 0.3, 0.3)
         else:
             self.ctx.set_source_rgb(0.6, 0.6, 0.6)
-        self.ctx.arc(x, y, 12, 0, 2. * math.pi)
+        self.ctx.arc(x, y, r, 0, 2. * math.pi)
         if is_pressed:
             self.ctx.set_line_width(4.0)
         else:
             self.ctx.set_line_width(2.0)
         self.ctx.stroke()
+
+        if self.pressed_classes[note] != 0:
+            self.ctx.set_line_width(4.0)
+            self.ctx.arc(x, y, r + 4, 0, 2. * math.pi)
+            self.ctx.stroke()
 
         label = NOTE_NAMES[note]
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
@@ -216,8 +225,10 @@ class TestPic:
     def press(self, num_key, channel, action=True):
         if action:
             self.pressed_notes[num_key] |= 1<<channel
+            self.pressed_classes[num_key % 12] += 1
         else:
             self.pressed_notes[num_key] &= ~(1<<channel)
+            self.pressed_classes[num_key % 12] -= 1
 
 def main():
     import ctypes
@@ -309,7 +320,7 @@ def main():
 
         #print('FPS: %f' % clock.get_fps())
 
-    midi_filename = 'Bach_Fugue_BWV578.mid'
+    midi_filename = 'borodin_polovtsian.mid'
     if not midi_filename is None:
         midi_file_player = MidiFileSoundPlayer(midi_filename, [pic])
         midi_thread = Thread(target = midi_file_player.play)
