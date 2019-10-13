@@ -197,6 +197,7 @@ class TestPic:
         self.ctx.fill()
 
         self.ctx.translate(self.width // 2, self.height // 2)
+        self.ctx.scale(1.0, 1.0)
 
         for n in range(int(self.width / self.hstep) - 1):
             note = self.base_note + n
@@ -251,7 +252,11 @@ def main():
 
     def update(dt, surface):
         ctx = cairo.Context(surface)
+
+        ctx.save()
         pic.draw_pic(ctx)
+        ctx.restore()
+
 
     @window.event
     def on_resize(width, height):
@@ -320,7 +325,7 @@ def main():
 
         #print('FPS: %f' % clock.get_fps())
 
-    midi_filename = 'borodin_polovtsian.mid'
+    midi_filename = 'Hallelujah.mid'
     if not midi_filename is None:
         midi_file_player = MidiFileSoundPlayer(midi_filename, [pic])
         midi_thread = Thread(target = midi_file_player.play)
