@@ -2,6 +2,37 @@ import fluidsynth
 import rtmidi
 import mido
 import time
+from threading import Thread, Lock
+
+class FifoList():
+    def __init__(self):
+        self.data = {}
+        self.nextin = 0
+        self.nextout = 0
+        self.lock = Lock()
+    def append(self, data):
+        try:
+            self.lock.acquire()
+            self.nextin += 1
+            self.data[self.nextin] = data
+        finally:
+            self.lock.release()
+    def pop(self):
+        try:
+            self.lock.acquire()
+            self.nextout += 1
+            result = self.data[self.nextout]
+            del self.data[self.nextout]
+        finally:
+            self.lock.release()
+        return result
+    def peek(self):
+        try:
+            self.lock.acquire()
+            result = self.data[self.nextout + 1] if self.data else None
+        finally:
+            self.lock.release()
+        return result
 
 class RandomSoundPlayer():
     def __init__(self, keyboard_handlers=None):
@@ -66,11 +97,14 @@ class MidiFileSoundPlayer():
         print('Song length: {} minutes, {} seconds'.format(int(length / 60), int(length % 60)))
         print('Tracks:')
         for i, track in enumerate(self.midi_file.tracks):
-            print('  {:2d}: {!r}'.format(i, track.name.strip()))
+            print('  {:2d}: {!r} ({} messages)'.format(i, track.name.strip(), len(track)))
+
+        #self.last_notes = FifoList()
 
     def play(self):
         time.sleep(1)
         for message in self.midi_file.play(meta_messages=True):
+            current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
             #sys.stdout.write(repr(message) + '\n')
             #sys.stdout.flush()
             if isinstance(message, mido.Message):
@@ -78,12 +112,14 @@ class MidiFileSoundPlayer():
                     self.fs.noteon(message.channel, message.note, message.velocity)
                     if self.keyboard_handlers:
                         for keyboard_handler in self.keyboard_handlers:
+                            #self.last_notes.append((current_timestamp, message.note, message.channel, True))
                             keyboard_handler.press(message.note, message.channel, True)
 
                 elif message.type == 'note_off':
                     self.fs.noteoff(message.channel, message.note)
                     if self.keyboard_handlers:
                         for keyboard_handler in self.keyboard_handlers:
+                            #self.last_notes.append((current_timestamp, message.note, message.channel, False))
                             keyboard_handler.press(message.note, message.channel, False)
 
             elif message.type == 'set_tempo':
@@ -146,34 +182,3 @@ class RtMidiSoundPlayer():
                 if self.keyboard_handlers:
                     for keyboard_handler in self.keyboard_handlers:
                         keyboard_handler.press(midi_msg[1], 16, False)
-
-class FifoList():
-    def __init__(self):
-        self.data = {}
-        self.nextin = 0
-        self.nextout = 0
-        self.lock = Lock()
-    def append(self, data):
-        try:
-            self.lock.acquire()
-            self.nextin += 1
-            self.data[self.nextin] = data
-        finally:
-            self.lock.release()
-    def pop(self):
-        try:
-            self.lock.acquire()
-            self.nextout += 1
-            result = self.data[self.nextout]
-            del self.data[self.nextout]
-        finally:
-            self.lock.release()
-        return result
-    def peek(self):
-        try:
-            self.lock.acquire()
-            result = self.data[self.nextout + 1] if self.data else None
-        finally:
-            self.lock.release()
-        return result
-
