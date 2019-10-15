@@ -395,7 +395,7 @@ def main():
     from MusicDefs import MusicDefs
 
     #pic = PianoOctavePic(width=400, height=200)
-    pic = HexagonalLayoutPic(D=100, scale=SCALE_MAJOR_DIATONIC, tonic=1, h=2)
+    pic = HexagonalLayoutPic(D=100, scale=SCALE_MAJOR_DIATONIC, tonic=1, h=4)
 
     window = window.Window(width=pic.width, height=pic.height)
     #ft = font.load('Arial', 24)

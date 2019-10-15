@@ -1,8 +1,15 @@
+from __future__ import print_function
+
 import fluidsynth
 import rtmidi
 import mido
 import time
+import sys
+
 from threading import Thread, Lock
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 class FifoList():
     def __init__(self):
@@ -39,12 +46,12 @@ class RandomSoundPlayer():
         self.keyboard_handlers = keyboard_handlers
         self.fs = fluidsynth.Synth()
         self.fs.start(driver="alsa")
-        print("FluidSynth Started")
+        eprint("FluidSynth Started")
         self.sfid = self.fs.sfload("/usr/share/sounds/sf2/FluidR3_GM.sf2")
         self.fs.program_select(0, self.sfid, 0, 0)
     def __del__(self): # See:https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/
         self.fs.delete()
-        print("FluidSynth Closed")
+        eprint("FluidSynth Closed")
         del self.fs
     def press(self, key, velocity=64, duration=0.5):
         self.fs.noteon(0, key + 19, velocity)
@@ -87,17 +94,31 @@ class MidiFileSoundPlayer():
         self.keyboard_handlers = keyboard_handlers
         self.fs = fluidsynth.Synth()
         self.fs.start(driver="alsa")
-        print("FluidSynth Started")
+        eprint("FluidSynth Started")
         self.sfid = self.fs.sfload("/usr/share/sounds/sf2/FluidR3_GM.sf2")
         for channel in range(0, 16):
             self.fs.program_select(channel, self.sfid, 0, 0)
         self.midi_file = mido.MidiFile(filename)
-        print('Midi File: {}'.format(self.midi_file.filename))
+        eprint('Midi File: {}'.format(self.midi_file.filename))
         length = self.midi_file.length
-        print('Song length: {} minutes, {} seconds'.format(int(length / 60), int(length % 60)))
-        print('Tracks:')
+        eprint('Song length: {} minutes, {} seconds'.format(int(length / 60), int(length % 60)))
+
+        self.pitch_histograms = []
+        eprint('Tracks:')
         for i, track in enumerate(self.midi_file.tracks):
-            print('  {:2d}: {!r} ({} messages)'.format(i, track.name.strip(), len(track)))
+            pitch_histogram = [0] * 12
+            eprint('  {:2d}: {!r} ({} messages)'.format(i, track.name.strip(), len(track)))
+            for message in track:
+                if isinstance(message, mido.Message):
+                    if message.type == 'note_on':
+                        pitch_histogram[message.note % 12] += 1
+                        #eprint(message)
+                        pass
+                    elif message.type == 'note_off':
+                        #eprint(message)
+                        pass
+            self.pitch_histograms.append(pitch_histogram)
+        eprint(self.pitch_histograms)
 
         #self.last_notes = FifoList()
 
@@ -123,12 +144,12 @@ class MidiFileSoundPlayer():
                             keyboard_handler.press(message.note, message.channel, False)
 
             elif message.type == 'set_tempo':
-                #print('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))
+                eprint('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))
                 pass
 
     def __del__(self): # See:https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/
         self.fs.delete()
-        print("FluidSynth Closed")
+        eprint("FluidSynth Closed")
         del self.fs
 
 class RtMidiSoundPlayer():
@@ -136,7 +157,7 @@ class RtMidiSoundPlayer():
         self.keyboard_handlers = keyboard_handlers
         self.fs = fluidsynth.Synth()
         self.fs.start(driver="alsa")
-        print("FluidSynth Started")
+        eprint("FluidSynth Started")
         self.sfid = self.fs.sfload("/usr/share/sounds/sf2/FluidR3_GM.sf2")
         self.fs.program_select(0, self.sfid, 0, 0)
 
@@ -147,19 +168,19 @@ class RtMidiSoundPlayer():
             try:
                 self.midi_in_port = self.midi_in.open_port(midi_port_num)
             except rtmidi.InvalidPortError:
-                print("Failed to open MIDI input")
+                eprint("Failed to open MIDI input")
                 self.midi_in_port = None
                 return
-            print("Using MIDI input Interface {}: '{}'".format(midi_port_num, available_ports[midi_port_num]))
+            eprint("Using MIDI input Interface {}: '{}'".format(midi_port_num, available_ports[midi_port_num]))
         else:
-            print("Creating virtual MIDI input.")
+            eprint("Creating virtual MIDI input.")
             self.midi_in_port = self.midi_in.open_virtual_port("midi_driving_in")
 
         self.midi_in.set_callback(self.midi_received)
 
     def __del__(self): # See:https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/
         self.fs.delete()
-        print("FluidSynth Closed")
+        eprint("FluidSynth Closed")
         del self.fs
 
     def midi_received(self, midi_event, data=None):
@@ -171,7 +192,7 @@ class RtMidiSoundPlayer():
             pitch_class = midi_msg[1] % 12
             octave = midi_msg[1] // 12
 
-            #print("%s" % ((pressed, note, octave, pitch_class),))
+            #eprint("%s" % ((pressed, note, octave, pitch_class),))
 
             if pressed: # A note was hit
                 if self.keyboard_handlers:
