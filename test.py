@@ -14,6 +14,43 @@ from threading import Thread, Lock
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<11)
 SCALE_MAJOR_MELODIC  = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<10)
 
+class Chords():
+    CHORDS_INFO = [
+        # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
+        [ [], (0, 4, 7, 11), "Major seventh Chord" ],
+        [ [], (0, 3, 7, 10), "Minor seventh Chord" ],
+        [ [], (0, 4, 7, 10), "Dominant seventh Chord" ],
+        [ [], (0, 3, 6,  9), "Diminished seventh Chord" ],
+        [ [], (0, 3, 6, 10), "Half-diminished seventh Chord" ],
+        [ [], (0, 3, 7, 11), "Minor major seventh Chord" ],
+        [ [], (0, 4, 8, 11), "Augmented major seventh Chord" ],
+
+        # Non-tertian seventh chords: constructed using augmented or diminished thirds
+        [ [], (0, 4, 8, 10), "Augmented minor seventh Chord" ],
+        [ [], (0, 3, 6, 11), "Diminished major seventh Chord" ],
+        [ [], (0, 4, 6, 10), "Dominant seventh flat five Chord" ],
+        [ [], (0, 4, 6, 11), "Major seventh flat five Chord" ],
+
+        # Primary triads
+        [ [], (0, 4, 7),  "Major Triad" ],
+        [ [], (0, 3, 7),  "Minor Triad" ],
+        [ [], (0, 3, 6),  "Diminished Triad" ],
+        [ [], (0, 4, 8),  "Augmented Triad" ],
+
+#        # Suspended triads
+        [ [], (0, 2, 7),  "Sus2 Triad" ],
+        [ [], (0, 5, 7),  "Sus4 Triad" ],
+    ]
+
+    for chord_info in CHORDS_INFO:
+        if not chord_info[0]:
+            chord_info[0] = [0] * 12
+            for i in range(0, 12):
+                chord_mask = 0
+                for num_note in chord_info[1]:
+                    chord_mask |= 1 << (i + num_note) % 12
+                chord_info[0][i] = chord_mask
+
 def main():
     import ctypes
     import time

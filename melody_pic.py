@@ -9,7 +9,6 @@ import sys
 
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<11)
 
-
 NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
 
 NOTE_MIDI_A4 = 69
@@ -45,7 +44,7 @@ class MelodyPic:
 
         self.vstep = 14. * math.sqrt(5.)
         self.hstep = 14.
-        self.width = 1200
+        self.width = 1400
         self.height = int(self.hstep * 27)
 
         self.base_note = NOTE_MIDI_C4 - 12 * 2
@@ -251,7 +250,7 @@ class MelodyPic:
 
         # Pitch classes
         for n in range(-11, 18):
-            for d in [3, 4]:
+            for d in [3, 4, 7]:
                 n2 = n - d
                 if n2 >= -11 and ((n * 7 + 4) % 24) < 12 and ((n2 * 7 + 4) % 24) < 12:
                     if self.notes[n % 12] and self.notes[n2 % 12]:
@@ -259,6 +258,7 @@ class MelodyPic:
                     else:
                         self.ctx.set_source_rgb(0.9, 0.9, 0.9)
                     if self.pressed_classes[n % 12] > 0 and self.pressed_classes[n2 % 12] > 0:
+                        self.ctx.set_source_rgb(0.4, 0.4, 0.4)
                         self.ctx.set_line_width(6.0)
                     else:
                         self.ctx.set_line_width(1.0)
