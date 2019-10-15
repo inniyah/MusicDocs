@@ -9,41 +9,6 @@ import sys
 
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<11)
 
-CHORDS_INFO = [
-    # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
-    [ [], (0, 4, 7, 11), "Major seventh Chord" ],
-    [ [], (0, 3, 7, 10), "Minor seventh Chord" ],
-    [ [], (0, 4, 7, 10), "Dominant seventh Chord" ],
-    [ [], (0, 3, 6,  9), "Diminished seventh Chord" ],
-    [ [], (0, 3, 6, 10), "Half-diminished seventh Chord" ],
-    [ [], (0, 3, 7, 11), "Minor major seventh Chord" ],
-    [ [], (0, 4, 8, 11), "Augmented major seventh Chord" ],
-
-    # Non-tertian seventh chords: constructed using augmented or diminished thirds
-    [ [], (0, 4, 8, 10), "Augmented minor seventh Chord" ],
-    [ [], (0, 3, 6, 11), "Diminished major seventh Chord" ],
-    [ [], (0, 4, 6, 10), "Dominant seventh flat five Chord" ],
-    [ [], (0, 4, 6, 11), "Major seventh flat five Chord" ],
-
-    # Primary triads
-    [ [], (0, 4, 7),  "Major Triad" ],
-    [ [], (0, 3, 7),  "Minor Triad" ],
-    [ [], (0, 3, 6),  "Diminished Triad" ],
-    [ [], (0, 4, 8),  "Augmented Triad" ],
-
-#    # Suspended triads
-    [ [], (0, 2, 7),  "Sus2 Triad" ],
-    [ [], (0, 5, 7),  "Sus4 Triad" ],
-]
-
-for chord_info in CHORDS_INFO:
-    if not chord_info[0]:
-        chord_info[0] = [0] * 12
-        for i in range(0, 12):
-            chord_mask = 0
-            for num_note in chord_info[1]:
-                chord_mask |= 1 << (i + num_note) % 12
-            chord_info[0][i] = chord_mask
 
 NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
 
@@ -78,15 +43,10 @@ class MelodyPic:
 
         self.notes = [(scale & 1<<(r%12) != 0) for r in range(tonic*7, tonic*7 + 12)]
 
-        for chord_signatures, chord_intervals, chord_name in CHORDS_INFO:
-            for num_signature, chord_signature in enumerate(chord_signatures):
-                if (scale & chord_signature) == chord_signature:
-                    print("Chord: {} on {}".format(chord_name, NOTE_NAMES[(num_signature) % 12]))
-
-        self.width = 1200
-        self.height = 800
         self.vstep = 14. * math.sqrt(5.)
         self.hstep = 14.
+        self.width = 1200
+        self.height = int(self.hstep * 27)
 
         self.base_note = NOTE_MIDI_C4 - 12 * 2
         self.pressed_notes = [ 0 ] * 128
@@ -141,8 +101,8 @@ class MelodyPic:
 
     def draw_note(self, n):
         note = (self.base_note + n) % 12
-        x = self.hstep * (1 + n) - self.width / 2.
-        y = self.height / 2 - self.hstep - ((n * 7 + 4) % 12) * self.vstep
+        x = self.hstep * (1 + n)
+        y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
 
         R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
         r = R[note]
@@ -163,19 +123,60 @@ class MelodyPic:
             self.ctx.set_source_rgb(0.3, 0.3, 0.3)
         else:
             self.ctx.set_source_rgb(0.6, 0.6, 0.6)
-        self.ctx.arc(x, y, r, 0, 2. * math.pi)
         if is_pressed:
-            self.ctx.set_line_width(4.0)
+            self.ctx.arc(x, y, r + 2.0, 0, 2. * math.pi)
+            self.ctx.set_line_width(6.0)
         else:
+            self.ctx.arc(x, y, r, 0, 2. * math.pi)
             self.ctx.set_line_width(2.0)
         self.ctx.stroke()
 
-        if self.pressed_classes[note] != 0:
-            self.ctx.set_line_width(4.0)
-            self.ctx.arc(x, y, r + 4, 0, 2. * math.pi)
-            self.ctx.stroke()
-
         label = NOTE_NAMES[note]
+        self.ctx.set_source_rgb(0.1, 0.1, 0.1)
+        self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+        self.ctx.set_font_size(10)
+        text_extents = self.ctx.text_extents(str(label))
+        self.ctx.move_to(x - text_extents.width/2., y + text_extents.height/2.)
+        self.ctx.show_text(str(label))
+
+        self.ctx.restore()
+
+    def draw_pitch_class(self, n):
+        x = self.width + self.hstep * (n - 18)
+
+        if ((n * 7 + 4) % 24) >= 12:
+            return
+
+        y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
+
+        R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
+        r = R[n % 12]
+
+        is_pressed = (self.pressed_classes[n % 12] != 0)
+
+        self.ctx.save()
+
+        if self.notes[n % 12]:
+            color = self.get_color_from_note(n, 1.)
+        else:
+            color = self.get_color_from_note(n, .1)
+        self.ctx.set_source_rgb(*color)
+        self.ctx.arc(x, y, r, 0, 2. * math.pi)
+        self.ctx.fill()
+
+        if self.notes[n % 12] or is_pressed:
+            self.ctx.set_source_rgb(0.3, 0.3, 0.3)
+        else:
+            self.ctx.set_source_rgb(0.6, 0.6, 0.6)
+        if is_pressed:
+            self.ctx.arc(x, y, r + 2.0, 0, 2. * math.pi)
+            self.ctx.set_line_width(6.0)
+        else:
+            self.ctx.arc(x, y, r, 0, 2. * math.pi)
+            self.ctx.set_line_width(2.0)
+        self.ctx.stroke()
+
+        label = NOTE_NAMES[n % 12]
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         self.ctx.set_font_size(10)
@@ -192,35 +193,42 @@ class MelodyPic:
         self.ctx.rectangle(0, 0, self.width, self.height)
         self.ctx.fill()
 
-        self.ctx.translate(self.width // 2, self.height // 2)
+        self.ctx.translate(0, 0)
         self.ctx.scale(1.0, 1.0)
 
-        # Vertical lines
-        for n in range(12):
-            note = self.base_note + n
-            y = self.height / 2 - self.hstep - ((n * 7 + 4) % 12) * self.vstep
-            color = self.get_color_from_note(note, 1. if self.notes[note % 12] else 0.1)
-            self.ctx.set_source_rgb(*color)
-            self.ctx.move_to(self.width/2, y)
-            self.ctx.line_to(-self.width/2, y)
-            self.ctx.stroke()
+        num_notes_in_screen = int(self.width / self.hstep) - 30
 
         # Horizontal lines
-        for n in range(int(self.width / self.hstep) - 1):
+        for n in range(12):
+            note = self.base_note + n
+            y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
+            color = self.get_color_from_note(note, 1. if self.notes[note % 12] else 0.1)
+            self.ctx.set_source_rgb(*color)
+            self.ctx.move_to(0, y)
+            self.ctx.line_to(self.width, y)
+            self.ctx.stroke()
+
+        # Vertical lines
+        for n in range(num_notes_in_screen):
             note = self.base_note + n
             channel = self.pressed_notes[note].bit_length() - 1
-            x = self.hstep * (1 + n) - self.width / 2.
+            x = self.hstep * (1 + n)
+            y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
             if channel >= 0:
                 self.ctx.set_source_rgb(*self.hsv_to_rgb(360. * ((channel*9)%16) / 16., 1.0, 0.6))
             else:
                 self.ctx.set_source_rgb(0.8, 0.8, 0.8)
-            self.ctx.move_to(x, self.height/2)
-            self.ctx.line_to(x, -self.height/2)
+            self.ctx.move_to(x, self.height)
+            self.ctx.line_to(x, y)
             self.ctx.stroke()
 
         # Notes
-        for n in range(int(self.width / self.hstep) - 1):
+        for n in range(num_notes_in_screen):
             self.draw_note(n)
+
+        # Pitch classes
+        for n in range(-11, 18):
+            self.draw_pitch_class(n)
 
     def press(self, num_key, channel, action=True):
         if action:
