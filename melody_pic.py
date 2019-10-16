@@ -3,6 +3,7 @@
 
 import cairo
 import math
+import random
 import os
 import queue
 import sys
@@ -35,6 +36,26 @@ if fast:
     OpenGL.ERROR_LOGGING = False
     OpenGL.ERROR_ON_COPY = True
     OpenGL.STORE_POINTERS = False
+
+def hsv_to_rgb(hue, saturation=1., value=1.):
+    h = float(hue)
+    s = float(saturation)
+    v = float(value)
+    h60 = h / 60.0
+    h60f = math.floor(h60)
+    hi = int(h60f) % 6
+    f = h60 - h60f
+    p = v * (1 - s)
+    q = v * (1 - f * s)
+    t = v * (1 - (1 - f) * s)
+    r, g, b = 0, 0, 0
+    if hi == 0: r, g, b = v, t, p
+    elif hi == 1: r, g, b = q, v, p
+    elif hi == 2: r, g, b = p, v, t
+    elif hi == 3: r, g, b = p, q, v
+    elif hi == 4: r, g, b = t, p, v
+    elif hi == 5: r, g, b = v, p, q
+    return r, g, b
 
 class MelodyPic:
     def __init__(self, D, scale=SCALE_MAJOR_DIATONIC, tonic=0):
@@ -74,38 +95,18 @@ class MelodyPic:
 
         self.ctx.restore()
 
-    def hsv_to_rgb(self, hue, saturation=1., value=1.):
-        h = float(hue)
-        s = float(saturation)
-        v = float(value)
-        h60 = h / 60.0
-        h60f = math.floor(h60)
-        hi = int(h60f) % 6
-        f = h60 - h60f
-        p = v * (1 - s)
-        q = v * (1 - f * s)
-        t = v * (1 - (1 - f) * s)
-        r, g, b = 0, 0, 0
-        if hi == 0: r, g, b = v, t, p
-        elif hi == 1: r, g, b = q, v, p
-        elif hi == 2: r, g, b = p, v, t
-        elif hi == 3: r, g, b = p, q, v
-        elif hi == 4: r, g, b = t, p, v
-        elif hi == 5: r, g, b = v, p, q
-        return r, g, b
-
     def get_vpos_from_note(self, note):
         return note * 7 + self.fifths_offset
 
     def get_color_from_note(self, note, saturation=1., value=1.):
         if note == -1:
             return (0.9, 0.9, 0.9)
-        return self.hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
+        return hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
 
     def get_color_from_channel(self, channel, saturation=1., value=1.):
         if channel == -1:
             return (0.9, 0.9, 0.9)
-        return self.hsv_to_rgb(360. * ((channel*17)%32)/32., saturation, value)
+        return hsv_to_rgb(360. * ((channel*17)%32)/32., saturation, value)
 
     def draw_note(self, n):
         note = n % 12
@@ -244,95 +245,29 @@ class MelodyPic:
 
     CHORDS_INFO = [
         [
-            [ [], (0, 4, 7, 11, 14, 17, 21), "Major 13th Chord" ],
-            [ [], (0, 4, 7, 10, 14, 17, 21), "Dominant 13th Chord" ],
-            [ [], (0,    7, 11, 14, 17, 21), "Major 13th Chord, leaving out the 3rd" ],
-            [ [], (0,    7, 10, 14, 17, 21), "Dominant 13th Chord, leaving out the 3rd" ],
-            [ [], (0, 3, 7, 10, 14, 17, 21), "Minor 13th Chord" ],
-        ],
-        [
-            [ [], (0, 4, 7, 11, 14, 17), "Major 11th Chord" ],
-            [ [], (0, 4, 7, 10, 14, 17), "Dominant 11th Chord" ],
-            [ [], (0,    7, 11, 14, 17), "Major 11th Chord, leaving out the 3rd (maj9sus4)" ],
-            [ [], (0,    7, 10, 14, 17), "Dominant 11th Chord, leaving out the 3rd (9sus4)" ],
-            [ [], (0, 3, 7, 10, 14, 17), "Minor 11th Chord" ],
-        ],
-        [
-            [ [], (0, 4, 7, 11, 14), "Major 9th Chord" ],
-            [ [], (0, 4, 7, 10, 14), "Dominant 9th Chord" ],
-            [ [], (0, 3, 7, 10, 14), "Minor 9th Chord" ],
-        ],
-        [
-            [ [], (0, 4, 7, 10, 15), "7#9 Chord or 'Hendrix Chord'" ],
-            [ [], (0, 4, 7, 10, 13), "'Irritating' 7b9 Chord" ],
-        ],
-        [
-            [ [], (0, 4,    11, 14, 17), "Major 11th Chord, leaving out the 5th" ],
-            [ [], (0, 4,    10, 14, 17), "Dominant 11th Chord, leaving out the 5th" ],
-            [ [], (0, 3,    10, 14, 17), "Minor 11th Chord, leaving out the 5th" ],
-        ],
-        [
-            [ [], (0, 4, 7,  11, 21), "Major 13th Chord" ],
-            [ [], (0, 4, 7,  10, 21), "Dominant 13th Chord" ],
-            [ [], (0, 3, 7,  10, 21), "Minor 13th Chord" ],
-        ],
-        [
-            [ [], (0, 4,     11, 21), "Major 13th Chord, leaving out the 5th" ],
-            [ [], (0, 4,     10, 21), "Dominant 13th Chord, leaving out the 5th" ],
-            [ [], (0, 3,     10, 21), "Minor 13th Chord, leaving out the 5th" ],
-        ],
-        [
-            [ [], (0, 4,    11, 14), "Major 9th Chord, leaving out the 5th" ],
-            [ [], (0, 4,    10, 14), "Dominant 9th Chord, leaving out the 5th" ],
-            [ [], (0, 3,    10, 14), "Minor 9th Chord, leaving out the 5th" ],
-        ],
-        [
             # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
-            [ [], (0, 4, 7, 11), "Major 7th Chord" ],
-            [ [], (0, 3, 7, 10), "Minor 7th Chord" ],
-            [ [], (0, 4, 7, 10), "Dominant 7th Chord" ],
-            [ [], (0, 3, 6,  9), "Diminished 7th Chord" ],
-            [ [], (0, 3, 6, 10), "Half-diminished 7th Chord" ],
-            [ [], (0, 3, 7, 11), "Minor major 7th Chord" ],
-            [ [], (0, 4, 8, 11), "Augmented major 7th Chord" ],
-        ],
-        [
-            # Non-tertian seventh chords: constructed using augmented or diminished thirds
-            [ [], (0, 4, 8, 10), "Augmented minor 7th Chord" ],
-            [ [], (0, 3, 6, 11), "Diminished major 7th Chord" ],
-            [ [], (0, 4, 6, 10), "Dominant 7th flat five Chord" ],
-            [ [], (0, 4, 6, 11), "Major 7th flat five Chord" ],
-        ],
-        [
-            [ [], (0, 4, 7, 14), "Add9 Chord" ],
-            [ [], (0, 4, 7, 9), "Add6 Chord" ],
-            [ [], (0, 4, 5, 7), "Add4 Chord" ],
-            [ [], (0, 2, 4, 7), "Add4 Chord" ],
+            [ [], None, (0, 4, 7, 11), "Major 7th Chord" ],
+            [ [], None, (0, 3, 7, 10), "Minor 7th Chord" ],
+            [ [], None, (0, 4, 7, 10), "Dominant 7th Chord" ],
+            [ [], None, (0, 3, 6,  9), "Diminished 7th Chord" ],
+            [ [], None, (0, 3, 6, 10), "Half-diminished 7th Chord" ],
+            [ [], None, (0, 3, 7, 11), "Minor major 7th Chord" ],
+            [ [], None, (0, 4, 8, 11), "Augmented major 7th Chord" ],
         ],
         [
             # Primary triads
-            [ [], (0, 4, 7),  "Major Triad" ],
-            [ [], (0, 3, 7),  "Minor Triad" ],
-            [ [], (0, 3, 6),  "Diminished Triad" ],
-            [ [], (0, 4, 8),  "Augmented Triad" ],
-        ],
-        [
-            [ [], (0,       11, 14, 17), "Major 11th Chord, leaving out the 3rd and the 5th" ],
-            [ [], (0,       10, 14, 17), "Dominant 11th Chord, leaving out the 3rd and the 5th" ],
+            [ [], None, (0, 4, 7),  "Major Triad" ],
+            [ [], None, (0, 3, 7),  "Minor Triad" ],
+            [ [], None, (0, 3, 6),  "Diminished Triad" ],
+            [ [], None, (0, 4, 8),  "Augmented Triad" ],
         ],
         [
             # Suspended triads
-            [ [], (0, 2, 7),  "Sus2 Triad" ],
-            [ [], (0, 5, 7),  "Sus4 Triad" ],
+            [ [], None, (0, 2, 7),  "Sus2 Triad" ],
+            [ [], None, (0, 5, 7),  "Sus4 Triad" ],
 
-            [ [], (0, 7, 9),  "6Sus Triad" ],
-            [ [], (0, 7, 10), "7Sus Triad" ],
-        ],
-        [
-            [ [], (0, 7),  "Parallel Fifths" ],
-            [ [], (0, 4),  "Major Third Interval" ],
-            [ [], (0, 3),  "Minor Third Interval" ],
-            [ [], (0, 11), "Major Seventh Interval" ],
+            [ [], None, (0, 7, 9),  "6Sus Triad" ],
+            [ [], None, (0, 7, 10), "7Sus Triad" ],
         ],
     ]
 
@@ -342,9 +277,11 @@ class MelodyPic:
                 chord_info[0] = [0] * 12
                 for i in range(0, 12):
                     chord_mask = 0
-                    for num_note in chord_info[1]:
+                    for num_note in chord_info[2]:
                         chord_mask |= 1 << (i + num_note) % 12
                     chord_info[0][i] = chord_mask
+            chord_info[1] = hsv_to_rgb(random.uniform(0, 360), saturation = 0.5, value = 1.0)
+
 
     def find_chords(self):
         chords_found = []
@@ -357,11 +294,11 @@ class MelodyPic:
 
         for chords_list in self.CHORDS_INFO:
             for n in range(12):
-                for chord_signatures, chord_intervals, chord_name in chords_list:
+                for chord_signatures, chord_color, chord_intervals, chord_name in chords_list:
                     note = (self.root_note + n * 7) % 12
                     chord_signature = chord_signatures[note]
                     if (pitch_classes & chord_signature) == chord_signature:
-                        chords_found.append((note % 12, chord_name, chord_intervals))
+                        chords_found.append((note % 12, chord_name, chord_intervals, chord_color))
                         #print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, NOTE_NAMES[note % 12],
                         #    pitch_classes, chord_signature, pitch_classes & ~chord_signature))
                         pitch_classes &= ~chord_signature
@@ -372,11 +309,11 @@ class MelodyPic:
         chords_found = self.find_chords()
         self.ctx.save()
 
-        print("{}".format(chords_found))
+        #print("{}".format(chords_found))
         for n in range(-13, 19):
             if (self.get_vpos_from_pitch_class(n) % 24) < 12:
                 note = (self.root_note + n) % 12
-                for chord_root, chord_name, chord_intervals in chords_found:
+                for chord_root, chord_name, chord_intervals, chord_color in chords_found:
                     if note == chord_root % 12:
                         print("Found: {} on {} ({})".format(chord_name, NOTE_NAMES[chord_root % 12], chord_intervals))
                         pitch_classes_in_chord = set()
@@ -387,16 +324,17 @@ class MelodyPic:
                                 pitch_classes_in_chord.add(n + d - 12)
 
                         if len(pitch_classes_in_chord) == len(chord_intervals):
-                            self.ctx.set_source_rgb(0.7, 0.7, 0.7)
+                            self.ctx.set_source_rgb(*chord_color)
                             self.ctx.set_line_width(50.0)
                             self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
-                            print(pitch_classes_in_chord)
-                            for n1 in pitch_classes_in_chord:
-                                for n2 in pitch_classes_in_chord:
+                            #print(pitch_classes_in_chord)
+                            n1 = None
+                            for n2 in sorted(pitch_classes_in_chord):
+                                if not n1 is None:
                                     self.draw_pitch_line(n1, n2)
+                                n1 = n2
 
         self.ctx.restore()
-        print("-")
 
     def get_vpos_from_pitch_class(self, note):
         return note * 7 + self.fifths_offset
@@ -404,7 +342,7 @@ class MelodyPic:
     def get_color_from_pitch(self, note, saturation=1., value=1.):
         if note == -1:
             return (0.9, 0.9, 0.9)
-        return self.hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
+        return hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
 
     def draw_pitch_line(self, n1, n2):
         x1 = self.width + self.hstep * (n1 - 19)
@@ -473,9 +411,13 @@ class MelodyPic:
     def draw_pitch_classes(self):
         # Pitch classes
         for n in range(-13, 19):
+            c = 0
             for d in [3, 4, 7]:
+                if d == 7 and c >= 0:
+                    continue
                 n2 = n - d
                 if n2 >= -13 and (self.get_vpos_from_pitch_class(n) % 24) < 12 and (self.get_vpos_from_pitch_class(n2) % 24) < 12:
+                    c += 1
                     if self.notes_in_scale[n % 12] and self.notes_in_scale[n2 % 12]:
                         self.ctx.set_source_rgb(0.4, 0.4, 0.4)
                         self.ctx.set_line_width(2.0)
@@ -536,7 +478,7 @@ class MelodyPic:
 #            x = self.hstep * (1 + n)
 #            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
 #            if channel >= 0:
-#                self.ctx.set_source_rgb(*self.hsv_to_rgb(360. * ((channel*9)%16) / 16., 1.0, 0.6))
+#                self.ctx.set_source_rgb(*hsv_to_rgb(360. * ((channel*9)%16) / 16., 1.0, 0.6))
 #            else:
 #                self.ctx.set_source_rgb(0.8, 0.8, 0.8)
 #            self.ctx.move_to(x, self.height)
