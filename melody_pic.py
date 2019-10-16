@@ -48,6 +48,7 @@ class MelodyPic:
         self.height = int(self.hstep * 27)
 
         self.base_note = NOTE_MIDI_C4 - 12 * 2
+        self.fifths_offset = 5
         self.pressed_notes = [ 0 ] * 128
         self.pressed_classes = [ 0 ] * 12
 
@@ -93,6 +94,9 @@ class MelodyPic:
         elif hi == 5: r, g, b = v, p, q
         return r, g, b
 
+    def get_vpos_from_note(self, note):
+        return note * 7 + self.fifths_offset
+
     def get_color_from_note(self, note, saturation=1., value=1.):
         if note == -1:
             return (0.9, 0.9, 0.9)
@@ -101,7 +105,7 @@ class MelodyPic:
     def draw_note(self, n):
         note = (self.base_note + n) % 12
         x = self.hstep * (1 + n)
-        y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
+        y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
 
         R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
         r = R[note]
@@ -141,10 +145,10 @@ class MelodyPic:
         #self.ctx.restore()
 
     def draw_pitch_line(self, n1, n2):
-        x1 = self.width + self.hstep * (n1 - 18)
-        y1 = self.height - self.hstep - ((n1 * 7 + 4) % 12) * self.vstep
-        x2 = self.width + self.hstep * (n2 - 18)
-        y2 = self.height - self.hstep - ((n2 * 7 + 4) % 12) * self.vstep
+        x1 = self.width + self.hstep * (n1 - 19)
+        y1 = self.height - self.hstep - (self.get_vpos_from_note(n1) % 12) * self.vstep
+        x2 = self.width + self.hstep * (n2 - 19)
+        y2 = self.height - self.hstep - (self.get_vpos_from_note(n2) % 12) * self.vstep
 
         #self.ctx.save()
 
@@ -155,11 +159,11 @@ class MelodyPic:
         #self.ctx.restore()
 
     def draw_pitch_class(self, n):
-        if ((n * 7 + 4) % 24) >= 12:
+        if (self.get_vpos_from_note(n) % 24) >= 12:
             return
 
-        x = self.width + self.hstep * (n - 18)
-        y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
+        x = self.width + self.hstep * (n - 19)
+        y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
 
         R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
         r = R[n % 12]
@@ -187,6 +191,12 @@ class MelodyPic:
             self.ctx.arc(x, y, r, 0, 2. * math.pi)
             self.ctx.set_line_width(2.0)
         self.ctx.stroke()
+ 
+        if not (n % 12):
+            self.ctx.set_source_rgb(0., 0., 0.)
+            self.ctx.arc(x, y, r + 8., 0, 2. * math.pi)
+            self.ctx.set_line_width(1.0)
+            self.ctx.stroke()
 
         label = NOTE_NAMES[n % 12]
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
@@ -208,13 +218,13 @@ class MelodyPic:
         self.ctx.translate(0, 0)
         self.ctx.scale(1.0, 1.0)
 
-        num_notes_in_screen = int(self.width / self.hstep) - 30
+        num_notes_in_screen = int(self.width / self.hstep) - 33
 
         for n in range(num_notes_in_screen - 1):
             x = self.hstep * (1 + n)
-            y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
+            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
             x2 = self.hstep * (1 + (n+1))
-            y2 = self.height - self.hstep - (((n+1) * 7 + 4) % 12) * self.vstep
+            y2 = self.height - self.hstep - (self.get_vpos_from_note(n+1) % 12) * self.vstep
             self.ctx.set_source_rgb(0.95, 0.95, 0.95)
             self.ctx.move_to(x, y)
             self.ctx.line_to(x2, y2)
@@ -223,8 +233,8 @@ class MelodyPic:
         # Horizontal lines
         for n in range(12):
             note = self.base_note + n
-            y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
-            color = self.get_color_from_note(note, 1. if self.notes[note % 12] else 0.1)
+            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
+            color = self.get_color_from_note(note, 1. if self.notes[note % 12] else 0.2)
             self.ctx.set_source_rgb(*color)
             self.ctx.move_to(0, y)
             self.ctx.line_to(self.width, y)
@@ -235,7 +245,7 @@ class MelodyPic:
             note = self.base_note + n
             channel = self.pressed_notes[note].bit_length() - 1
             x = self.hstep * (1 + n)
-            y = self.height - self.hstep - ((n * 7 + 4) % 12) * self.vstep
+            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
             if channel >= 0:
                 self.ctx.set_source_rgb(*self.hsv_to_rgb(360. * ((channel*9)%16) / 16., 1.0, 0.6))
             else:
@@ -248,24 +258,41 @@ class MelodyPic:
         for n in range(num_notes_in_screen):
             self.draw_note(n)
 
+        # Chords
+        self.ctx.save()
+        for n in range(-11, 19):
+            for d in [3, 4]:
+                n2 = n - d
+                if n2 >= -11 and (self.get_vpos_from_note(n) % 24) < 12 and (self.get_vpos_from_note(n2) % 24) < 12:
+                    if self.pressed_classes[n % 12] > 0 and self.pressed_classes[n2 % 12] > 0:
+                        self.ctx.set_source_rgb(0.7, 0.7, 0.7)
+
+                        self.ctx.set_line_width(50.0)
+                        self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+
+                        self.draw_pitch_line(n, n2)
+        self.ctx.restore()
+
         # Pitch classes
-        for n in range(-11, 18):
+        for n in range(-11, 19):
             for d in [3, 4, 7]:
                 n2 = n - d
-                if n2 >= -11 and ((n * 7 + 4) % 24) < 12 and ((n2 * 7 + 4) % 24) < 12:
+                if n2 >= -11 and (self.get_vpos_from_note(n) % 24) < 12 and (self.get_vpos_from_note(n2) % 24) < 12:
                     if self.notes[n % 12] and self.notes[n2 % 12]:
                         self.ctx.set_source_rgb(0.4, 0.4, 0.4)
+                        self.ctx.set_line_width(2.0)
                     else:
-                        self.ctx.set_source_rgb(0.9, 0.9, 0.9)
+                        self.ctx.set_source_rgb(0.8, 0.8, 0.8)
+                        self.ctx.set_line_width(1.0)
+
                     if self.pressed_classes[n % 12] > 0 and self.pressed_classes[n2 % 12] > 0:
                         self.ctx.set_source_rgb(0.4, 0.4, 0.4)
                         self.ctx.set_line_width(6.0)
-                    else:
-                        self.ctx.set_line_width(1.0)
+
                     self.draw_pitch_line(n, n2)
 
         # Pitch classes
-        for n in range(-11, 18):
+        for n in range(-11, 19):
             self.draw_pitch_class(n)
 
     def press(self, num_key, channel, action=True):
