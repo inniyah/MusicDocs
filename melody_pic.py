@@ -14,6 +14,15 @@ NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 
 NOTE_MIDI_A4 = 69
 NOTE_MIDI_C4 = 60
 
+NOTE_MIDI_A3 = 57
+NOTE_MIDI_C3 = 48
+
+NOTE_MIDI_A2 = 45
+NOTE_MIDI_C2 = 36
+
+NOTE_MIDI_A1 = 33
+NOTE_MIDI_C1 = 24
+
 def seq_floats(start, stop, step=1):
     stop = stop - step;
     number = int(round((stop - start)/float(step)))
@@ -101,6 +110,11 @@ class MelodyPic:
         if note == -1:
             return (0.9, 0.9, 0.9)
         return self.hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
+
+    def get_color_from_channel(self, channel, saturation=1., value=1.):
+        if channel == -1:
+            return (0.9, 0.9, 0.9)
+        return self.hsv_to_rgb(360. * ((channel*17)%32)/32., saturation, value)
 
     def draw_note(self, n):
         note = (self.base_note + n) % 12
@@ -208,6 +222,99 @@ class MelodyPic:
 
         #self.ctx.restore()
 
+    WHITE_KEYS = set([0, 2, 4, 5, 7, 9, 11])
+    WHITE_KEY_WIDTH = 18.
+    BLACK_KEY_WIDTH = WHITE_KEY_WIDTH * 7. / 12.
+    OCTAVE_START = 2 - 1
+    OCTAVE_END = 6 + 1
+
+    def draw_white_keys(self):
+        pos = 0
+        for n in range(12 * self.OCTAVE_START, 12 * (self.OCTAVE_END + 1)): # Octaves 2 to 5
+            if not (n%12) in self.WHITE_KEYS:
+                continue
+
+            x1 = 9 + (pos) * self.WHITE_KEY_WIDTH
+            x2 = 9 + (pos + 1) * self.WHITE_KEY_WIDTH
+            pos += 1
+
+            is_pressed = (self.pressed_notes[n] != 0)
+            channel = self.pressed_notes[n].bit_length() - 1
+            color = (1., 1., 1.)
+            self.ctx.move_to(x1, self.height - 2)
+            self.ctx.line_to(x2, self.height - 2)
+            self.ctx.line_to(x2, self.height - 100)
+            self.ctx.line_to(x1, self.height - 100)
+            self.ctx.close_path()
+            self.ctx.set_source_rgb(*color)
+            self.ctx.fill_preserve()
+            if (n % 12) == 0:
+                self.ctx.set_source_rgb(0.0, 0.0, 0.0)
+            else:
+                self.ctx.set_source_rgb(0.5, 0.5, 0.5)
+            self.ctx.set_line_width(1)
+            self.ctx.stroke()
+
+            press_x = (x1 + x2) / 2.
+            press_y = self.height - 10
+            press_r = self.WHITE_KEY_WIDTH / 2
+
+            if is_pressed:
+                color = self.get_color_from_channel(channel, 0.5)
+                self.ctx.set_source_rgb(*color)
+                self.ctx.arc(press_x, press_y, press_r, 0, 2. * math.pi)
+                self.ctx.fill()
+
+            label = NOTE_NAMES[n % 12]
+            self.ctx.set_source_rgb(0., 0., 0.)
+            self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+            self.ctx.set_font_size(8)
+            text_extents = self.ctx.text_extents(str(label))
+            self.ctx.move_to(press_x - text_extents.width/2., press_y + text_extents.height/2.)
+            self.ctx.show_text(str(label))
+
+    def draw_black_keys(self):
+        pos = 0
+        for n in range(12 * self.OCTAVE_START, 12 * (self.OCTAVE_END + 1)): # Octaves 2 to 5
+            x1 = 9 + (pos) * self.BLACK_KEY_WIDTH
+            x2 = 9 + (pos + 1) * self.BLACK_KEY_WIDTH
+            pos += 1
+
+            if (n%12) in self.WHITE_KEYS:
+                continue
+
+            is_pressed = (self.pressed_notes[n] != 0)
+            channel = self.pressed_notes[n].bit_length() - 1
+            color = (0., 0., 0.)
+            self.ctx.move_to(x1, self.height - 50)
+            self.ctx.line_to(x2, self.height - 50)
+            self.ctx.line_to(x2, self.height - 100)
+            self.ctx.line_to(x1, self.height - 100)
+            self.ctx.close_path()
+            self.ctx.set_source_rgb(*color)
+            self.ctx.fill_preserve()
+            self.ctx.set_source_rgb(0.5, 0.5, 0.5)
+            self.ctx.set_line_width(1)
+            self.ctx.stroke()
+
+            press_x = (x1 + x2) / 2.
+            press_y = self.height - 56
+            press_r = self.BLACK_KEY_WIDTH / 2
+
+            if is_pressed:
+                color = self.get_color_from_channel(channel, 0.5)
+                self.ctx.set_source_rgb(*color)
+                self.ctx.arc(press_x, press_y, press_r, 0, 2. * math.pi)
+                self.ctx.fill()
+
+            label = NOTE_NAMES[n % 12]
+            self.ctx.set_source_rgb(0., 0., 0.)
+            self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+            self.ctx.set_font_size(6)
+            text_extents = self.ctx.text_extents(str(label))
+            self.ctx.move_to(press_x - text_extents.width/2., press_y + text_extents.height/2.)
+            self.ctx.show_text(str(label))
+
     def draw_pic(self, ctx):
         self.ctx = ctx
 
@@ -218,52 +325,56 @@ class MelodyPic:
         self.ctx.translate(0, 0)
         self.ctx.scale(1.0, 1.0)
 
-        num_notes_in_screen = int(self.width / self.hstep) - 33
+        self.draw_white_keys()
+        self.draw_black_keys()
 
-        for n in range(num_notes_in_screen - 1):
-            x = self.hstep * (1 + n)
-            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
-            x2 = self.hstep * (1 + (n+1))
-            y2 = self.height - self.hstep - (self.get_vpos_from_note(n+1) % 12) * self.vstep
-            self.ctx.set_source_rgb(0.95, 0.95, 0.95)
-            self.ctx.move_to(x, y)
-            self.ctx.line_to(x2, y2)
-            self.ctx.stroke()
+#        num_notes_in_screen = int(self.width / self.hstep) - 34
 
-        # Horizontal lines
-        for n in range(12):
-            note = self.base_note + n
-            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
-            color = self.get_color_from_note(note, 1. if self.notes[note % 12] else 0.2)
-            self.ctx.set_source_rgb(*color)
-            self.ctx.move_to(0, y)
-            self.ctx.line_to(self.width, y)
-            self.ctx.stroke()
+#        # Connection between fiths
+#        for n in range(num_notes_in_screen - 1):
+#            x = self.hstep * (1 + n)
+#            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
+#            x2 = self.hstep * (1 + (n+1))
+#            y2 = self.height - self.hstep - (self.get_vpos_from_note(n+1) % 12) * self.vstep
+#            self.ctx.set_source_rgb(0.95, 0.95, 0.95)
+#            self.ctx.move_to(x, y)
+#            self.ctx.line_to(x2, y2)
+#            self.ctx.stroke()
 
-        # Vertical lines
-        for n in range(num_notes_in_screen):
-            note = self.base_note + n
-            channel = self.pressed_notes[note].bit_length() - 1
-            x = self.hstep * (1 + n)
-            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
-            if channel >= 0:
-                self.ctx.set_source_rgb(*self.hsv_to_rgb(360. * ((channel*9)%16) / 16., 1.0, 0.6))
-            else:
-                self.ctx.set_source_rgb(0.8, 0.8, 0.8)
-            self.ctx.move_to(x, self.height)
-            self.ctx.line_to(x, y)
-            self.ctx.stroke()
+#        # Horizontal lines
+#        for n in range(12):
+#            note = self.base_note + n
+#            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
+#            color = self.get_color_from_note(note, 1. if self.notes[note % 12] else 0.2)
+#            self.ctx.set_source_rgb(*color)
+#            self.ctx.move_to(0, y)
+#            self.ctx.line_to(self.width, y)
+#            self.ctx.stroke()
 
-        # Notes
-        for n in range(num_notes_in_screen):
-            self.draw_note(n)
+#        # Vertical lines
+#        for n in range(num_notes_in_screen):
+#            note = self.base_note + n
+#            channel = self.pressed_notes[note].bit_length() - 1
+#            x = self.hstep * (1 + n)
+#            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
+#            if channel >= 0:
+#                self.ctx.set_source_rgb(*self.hsv_to_rgb(360. * ((channel*9)%16) / 16., 1.0, 0.6))
+#            else:
+#                self.ctx.set_source_rgb(0.8, 0.8, 0.8)
+#            self.ctx.move_to(x, self.height)
+#            self.ctx.line_to(x, y)
+#            self.ctx.stroke()
+
+#        # Notes
+#        for n in range(num_notes_in_screen):
+#            self.draw_note(n)
 
         # Chords
         self.ctx.save()
-        for n in range(-11, 19):
+        for n in range(-13, 19):
             for d in [3, 4]:
                 n2 = n - d
-                if n2 >= -11 and (self.get_vpos_from_note(n) % 24) < 12 and (self.get_vpos_from_note(n2) % 24) < 12:
+                if n2 >= -13 and (self.get_vpos_from_note(n) % 24) < 12 and (self.get_vpos_from_note(n2) % 24) < 12:
                     if self.pressed_classes[n % 12] > 0 and self.pressed_classes[n2 % 12] > 0:
                         self.ctx.set_source_rgb(0.7, 0.7, 0.7)
 
@@ -274,10 +385,10 @@ class MelodyPic:
         self.ctx.restore()
 
         # Pitch classes
-        for n in range(-11, 19):
+        for n in range(-13, 19):
             for d in [3, 4, 7]:
                 n2 = n - d
-                if n2 >= -11 and (self.get_vpos_from_note(n) % 24) < 12 and (self.get_vpos_from_note(n2) % 24) < 12:
+                if n2 >= -13 and (self.get_vpos_from_note(n) % 24) < 12 and (self.get_vpos_from_note(n2) % 24) < 12:
                     if self.notes[n % 12] and self.notes[n2 % 12]:
                         self.ctx.set_source_rgb(0.4, 0.4, 0.4)
                         self.ctx.set_line_width(2.0)
@@ -292,7 +403,7 @@ class MelodyPic:
                     self.draw_pitch_line(n, n2)
 
         # Pitch classes
-        for n in range(-11, 19):
+        for n in range(-13, 19):
             self.draw_pitch_class(n)
 
     def press(self, num_key, channel, action=True):
