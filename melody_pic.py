@@ -242,21 +242,161 @@ class MelodyPic:
             self.ctx.move_to(press_x - text_extents.width/2., press_y + text_extents.height/2.)
             self.ctx.show_text(str(label))
 
+    CHORDS_INFO = [
+        [
+            [ [], (0, 4, 7, 11, 14, 17, 21), "Major 13th Chord" ],
+            [ [], (0, 4, 7, 10, 14, 17, 21), "Dominant 13th Chord" ],
+            [ [], (0,    7, 11, 14, 17, 21), "Major 13th Chord, leaving out the 3rd" ],
+            [ [], (0,    7, 10, 14, 17, 21), "Dominant 13th Chord, leaving out the 3rd" ],
+            [ [], (0, 3, 7, 10, 14, 17, 21), "Minor 13th Chord" ],
+        ],
+        [
+            [ [], (0, 4, 7, 11, 14, 17), "Major 11th Chord" ],
+            [ [], (0, 4, 7, 10, 14, 17), "Dominant 11th Chord" ],
+            [ [], (0,    7, 11, 14, 17), "Major 11th Chord, leaving out the 3rd (maj9sus4)" ],
+            [ [], (0,    7, 10, 14, 17), "Dominant 11th Chord, leaving out the 3rd (9sus4)" ],
+            [ [], (0, 3, 7, 10, 14, 17), "Minor 11th Chord" ],
+        ],
+        [
+            [ [], (0, 4, 7, 11, 14), "Major 9th Chord" ],
+            [ [], (0, 4, 7, 10, 14), "Dominant 9th Chord" ],
+            [ [], (0, 3, 7, 10, 14), "Minor 9th Chord" ],
+        ],
+        [
+            [ [], (0, 4, 7, 10, 15), "7#9 Chord or 'Hendrix Chord'" ],
+            [ [], (0, 4, 7, 10, 13), "'Irritating' 7b9 Chord" ],
+        ],
+        [
+            [ [], (0, 4,    11, 14, 17), "Major 11th Chord, leaving out the 5th" ],
+            [ [], (0, 4,    10, 14, 17), "Dominant 11th Chord, leaving out the 5th" ],
+            [ [], (0, 3,    10, 14, 17), "Minor 11th Chord, leaving out the 5th" ],
+        ],
+        [
+            [ [], (0, 4, 7,  11, 21), "Major 13th Chord" ],
+            [ [], (0, 4, 7,  10, 21), "Dominant 13th Chord" ],
+            [ [], (0, 3, 7,  10, 21), "Minor 13th Chord" ],
+        ],
+        [
+            [ [], (0, 4,     11, 21), "Major 13th Chord, leaving out the 5th" ],
+            [ [], (0, 4,     10, 21), "Dominant 13th Chord, leaving out the 5th" ],
+            [ [], (0, 3,     10, 21), "Minor 13th Chord, leaving out the 5th" ],
+        ],
+        [
+            [ [], (0, 4,    11, 14), "Major 9th Chord, leaving out the 5th" ],
+            [ [], (0, 4,    10, 14), "Dominant 9th Chord, leaving out the 5th" ],
+            [ [], (0, 3,    10, 14), "Minor 9th Chord, leaving out the 5th" ],
+        ],
+        [
+            # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
+            [ [], (0, 4, 7, 11), "Major 7th Chord" ],
+            [ [], (0, 3, 7, 10), "Minor 7th Chord" ],
+            [ [], (0, 4, 7, 10), "Dominant 7th Chord" ],
+            [ [], (0, 3, 6,  9), "Diminished 7th Chord" ],
+            [ [], (0, 3, 6, 10), "Half-diminished 7th Chord" ],
+            [ [], (0, 3, 7, 11), "Minor major 7th Chord" ],
+            [ [], (0, 4, 8, 11), "Augmented major 7th Chord" ],
+        ],
+        [
+            # Non-tertian seventh chords: constructed using augmented or diminished thirds
+            [ [], (0, 4, 8, 10), "Augmented minor 7th Chord" ],
+            [ [], (0, 3, 6, 11), "Diminished major 7th Chord" ],
+            [ [], (0, 4, 6, 10), "Dominant 7th flat five Chord" ],
+            [ [], (0, 4, 6, 11), "Major 7th flat five Chord" ],
+        ],
+        [
+            [ [], (0, 4, 7, 14), "Add9 Chord" ],
+            [ [], (0, 4, 7, 9), "Add6 Chord" ],
+            [ [], (0, 4, 5, 7), "Add4 Chord" ],
+            [ [], (0, 2, 4, 7), "Add4 Chord" ],
+        ],
+        [
+            # Primary triads
+            [ [], (0, 4, 7),  "Major Triad" ],
+            [ [], (0, 3, 7),  "Minor Triad" ],
+            [ [], (0, 3, 6),  "Diminished Triad" ],
+            [ [], (0, 4, 8),  "Augmented Triad" ],
+        ],
+        [
+            [ [], (0,       11, 14, 17), "Major 11th Chord, leaving out the 3rd and the 5th" ],
+            [ [], (0,       10, 14, 17), "Dominant 11th Chord, leaving out the 3rd and the 5th" ],
+        ],
+        [
+            # Suspended triads
+            [ [], (0, 2, 7),  "Sus2 Triad" ],
+            [ [], (0, 5, 7),  "Sus4 Triad" ],
+
+            [ [], (0, 7, 9),  "6Sus Triad" ],
+            [ [], (0, 7, 10), "7Sus Triad" ],
+        ],
+        [
+            [ [], (0, 7),  "Parallel Fifths" ],
+            [ [], (0, 4),  "Major Third Interval" ],
+            [ [], (0, 3),  "Minor Third Interval" ],
+            [ [], (0, 11), "Major Seventh Interval" ],
+        ],
+    ]
+
+    for chords_list in CHORDS_INFO:
+        for chord_info in chords_list:
+            if not chord_info[0]:
+                chord_info[0] = [0] * 12
+                for i in range(0, 12):
+                    chord_mask = 0
+                    for num_note in chord_info[1]:
+                        chord_mask |= 1 << (i + num_note) % 12
+                    chord_info[0][i] = chord_mask
+
+    def find_chords(self):
+        chords_found = []
+
+        pitch_classes = 0
+        for num_note in range(0, 12):
+            value = 1 << (num_note % 12)
+            if self.pitch_classes_active[num_note] > 0:
+                pitch_classes |= value
+
+        for chords_list in self.CHORDS_INFO:
+            for n in range(12):
+                for chord_signatures, chord_intervals, chord_name in chords_list:
+                    note = (self.root_note + n * 7) % 12
+                    chord_signature = chord_signatures[note]
+                    if (pitch_classes & chord_signature) == chord_signature:
+                        chords_found.append((note % 12, chord_name, chord_intervals))
+                        #print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, NOTE_NAMES[note % 12],
+                        #    pitch_classes, chord_signature, pitch_classes & ~chord_signature))
+                        pitch_classes &= ~chord_signature
+
+        return chords_found
+
     def draw_chords(self):
-        # Chords
+        chords_found = self.find_chords()
         self.ctx.save()
+
+        print("{}".format(chords_found))
         for n in range(-13, 19):
-            for d in [3, 4]:
-                n2 = n - d
-                if n2 >= -13 and (self.get_vpos_from_pitch_class(n) % 24) < 12 and (self.get_vpos_from_pitch_class(n2) % 24) < 12:
-                    if self.pitch_classes_active[(self.root_note + n) % 12] > 0 and self.pitch_classes_active[(self.root_note + n2) % 12] > 0:
-                        self.ctx.set_source_rgb(0.7, 0.7, 0.7)
+            if (self.get_vpos_from_pitch_class(n) % 24) < 12:
+                note = (self.root_note + n) % 12
+                for chord_root, chord_name, chord_intervals in chords_found:
+                    if note == chord_root % 12:
+                        print("Found: {} on {} ({})".format(chord_name, NOTE_NAMES[chord_root % 12], chord_intervals))
+                        pitch_classes_in_chord = set()
+                        for d in chord_intervals:
+                            if (n + d) >= -13 and (n + d) < 19 and (self.get_vpos_from_pitch_class(n + d) % 24) < 12:
+                                pitch_classes_in_chord.add(n + d)
+                            if (n + d - 12) >= -13 and (n + d - 12) < 19 and (self.get_vpos_from_pitch_class(n + d - 12) % 24) < 12:
+                                pitch_classes_in_chord.add(n + d - 12)
 
-                        self.ctx.set_line_width(50.0)
-                        self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+                        if len(pitch_classes_in_chord) == len(chord_intervals):
+                            self.ctx.set_source_rgb(0.7, 0.7, 0.7)
+                            self.ctx.set_line_width(50.0)
+                            self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+                            print(pitch_classes_in_chord)
+                            for n1 in pitch_classes_in_chord:
+                                for n2 in pitch_classes_in_chord:
+                                    self.draw_pitch_line(n1, n2)
 
-                        self.draw_pitch_line(n, n2)
         self.ctx.restore()
+        print("-")
 
     def get_vpos_from_pitch_class(self, note):
         return note * 7 + self.fifths_offset
