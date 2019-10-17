@@ -155,9 +155,9 @@ MIDI_GM1 = {
 	117 Taiko Drum
 	118 Melodic Tom
 	119 Synth Drum
+	120 Reverse Cymbal
 
 	# Sound effects:
-	120 Reverse Cymbal
 	121 Guitar Fret Noise
 	122 Breath Noise
 	123 Seashore

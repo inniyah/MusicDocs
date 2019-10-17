@@ -123,6 +123,7 @@ class MidiFileSoundPlayer():
         #self.last_notes = FifoList()
 
     def play(self):
+        channel_programs = [0] * 16
         time.sleep(1)
         for message in self.midi_file.play(meta_messages=True):
             current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
@@ -134,14 +135,22 @@ class MidiFileSoundPlayer():
                     if self.keyboard_handlers:
                         for keyboard_handler in self.keyboard_handlers:
                             #self.last_notes.append((current_timestamp, message.note, message.channel, True))
-                            keyboard_handler.press(message.note, message.channel, True)
+                            keyboard_handler.press(message.note, message.channel, True, message.channel == 9)
 
                 elif message.type == 'note_off':
                     self.fs.noteoff(message.channel, message.note)
                     if self.keyboard_handlers:
                         for keyboard_handler in self.keyboard_handlers:
                             #self.last_notes.append((current_timestamp, message.note, message.channel, False))
-                            keyboard_handler.press(message.note, message.channel, False)
+                            keyboard_handler.press(message.note, message.channel, False, message.channel == 9)
+
+                elif message.type == 'control_change':
+                    eprint('Control {} for {} changed to {}'.format(message.control, message.channel, message.value))
+
+                elif message.type == 'program_change':
+                    channel_programs[message.channel] = message.program
+                    self.fs.program_select(message.channel, self.sfid, 0, message.program)
+                    eprint('Program for {} changed to {}'.format(message.channel, message.program))
 
             elif message.type == 'set_tempo':
                 eprint('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))

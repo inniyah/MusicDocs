@@ -493,11 +493,12 @@ class MelodyPic:
         self.draw_pitch_classes()
 
 
-    def press(self, num_key, channel, action=True):
-        if action:
-            self.notes_active[num_key] |= 1<<channel
-            self.pitch_classes_active[num_key % 12] += 1
-        else:
-            self.notes_active[num_key] &= ~(1<<channel)
-            self.pitch_classes_active[num_key % 12] -= 1
+    def press(self, num_key, channel, action=True, drums=False):
+        if not drums:
+            if action:
+                self.notes_active[num_key] |= 1<<channel
+                self.pitch_classes_active[num_key % 12] += 1
+            else:
+                self.notes_active[num_key] &= ~(1<<channel)
+                self.pitch_classes_active[num_key % 12] -= 1
 
