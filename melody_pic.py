@@ -108,8 +108,11 @@ class MelodyPic:
 
         self.vstep = 14. * math.sqrt(5.)
         self.hstep = 14.
-        self.width = 1400
-        self.height = int(self.hstep * 27)
+
+        min_height_chords = int(self.hstep * 27)
+
+        self.width = 1280
+        self.height = max(720, min_height_chords)
 
         self.root_note = 0
         self.note_names = [FIFTHS_NAMES[8 + p] for p in DIATONIC_SCALE_POS]
@@ -197,7 +200,7 @@ class MelodyPic:
     WHITE_KEYS = set([0, 2, 4, 5, 7, 9, 11])
     WHITE_KEY_WIDTH = 18.
     BLACK_KEY_WIDTH = WHITE_KEY_WIDTH * 7. / 12.
-    OCTAVE_START = 2 - 1
+    OCTAVE_START = 2
     OCTAVE_END = 6 + 1
 
     def draw_white_keys(self):
