@@ -8,6 +8,8 @@ import os
 import queue
 import sys
 
+from general_midi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
+
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<11)
 
 NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']

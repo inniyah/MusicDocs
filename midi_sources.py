@@ -8,6 +8,8 @@ import sys
 
 from threading import Thread, Lock
 
+from general_midi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -104,6 +106,7 @@ class MidiFileSoundPlayer():
         eprint('Song length: {} minutes, {} seconds'.format(int(length / 60), int(length % 60)))
 
         self.pitch_histograms = []
+        self.instruments = set()
         eprint('Tracks:')
         for i, track in enumerate(self.midi_file.tracks):
             pitch_histogram = [0] * 12
@@ -117,8 +120,11 @@ class MidiFileSoundPlayer():
                     elif message.type == 'note_off':
                         #eprint(message)
                         pass
+                    elif message.type == 'program_change':
+                        self.instruments.add(message.program)
             self.pitch_histograms.append(pitch_histogram)
         eprint(self.pitch_histograms)
+        eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
 
         #self.last_notes = FifoList()
 
@@ -150,7 +156,7 @@ class MidiFileSoundPlayer():
                 elif message.type == 'program_change':
                     channel_programs[message.channel] = message.program
                     self.fs.program_select(message.channel, self.sfid, 0, message.program)
-                    eprint('Program for {} changed to {}'.format(message.channel, message.program))
+                    eprint('Program for {} changed to {} ("{}")'.format(message.channel, message.program, MIDI_GM1_INSTRUMENT_NAMES[message.program + 1]))
 
             elif message.type == 'set_tempo':
                 eprint('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))
