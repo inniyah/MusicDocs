@@ -119,6 +119,7 @@ class MelodyPic:
         self.root_note = 0
         self.note_names = [FIFTHS_NAMES[8 + p] for p in DIATONIC_SCALE_POS]
         self.fifths_offset = 5
+
         self.notes_active = [ 0 ] * 128
         self.pitch_classes_active = [ 0 ] * 12
 
@@ -224,11 +225,10 @@ class MelodyPic:
             self.ctx.line_to(x1, self.height - 100)
             self.ctx.close_path()
             self.ctx.set_source_rgb(*color)
+            if (n % 12) == self.root_note:
+                self.ctx.set_source_rgb(1.0, 1.0, 0.9)
             self.ctx.fill_preserve()
-            if (n % 12) == 0:
-                self.ctx.set_source_rgb(0.0, 0.0, 0.0)
-            else:
-                self.ctx.set_source_rgb(0.5, 0.5, 0.5)
+            self.ctx.set_source_rgb(0.5, 0.5, 0.5)
             self.ctx.set_line_width(1)
             self.ctx.stroke()
 
@@ -257,7 +257,7 @@ class MelodyPic:
             x2 = 9 + (pos + 1) * self.BLACK_KEY_WIDTH
             pos += 1
 
-            if (n%12) in self.WHITE_KEYS:
+            if (n % 12) in self.WHITE_KEYS:
                 continue
 
             is_pressed = (self.notes_active[n] != 0)
@@ -269,6 +269,8 @@ class MelodyPic:
             self.ctx.line_to(x1, self.height - 100)
             self.ctx.close_path()
             self.ctx.set_source_rgb(*color)
+            if (n % 12) == self.root_note:
+                self.ctx.set_source_rgb(0., 0., 0.5)
             self.ctx.fill_preserve()
             self.ctx.set_source_rgb(0.5, 0.5, 0.5)
             self.ctx.set_line_width(1)
