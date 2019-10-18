@@ -290,28 +290,28 @@ class MelodyPic:
     CHORDS_INFO = [
         [
             # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
-            [ [], None, (0, 4, 7, 11), "Major 7th Chord" ],
-            [ [], None, (0, 3, 7, 10), "Minor 7th Chord" ],
-            [ [], None, (0, 4, 7, 10), "Dominant 7th Chord" ],
-            [ [], None, (0, 3, 6,  9), "Diminished 7th Chord" ],
-            [ [], None, (0, 3, 6, 10), "Half-diminished 7th Chord" ],
-            [ [], None, (0, 3, 7, 11), "Minor major 7th Chord" ],
-            [ [], None, (0, 4, 8, 11), "Augmented major 7th Chord" ],
+            [ [], (0, 4, 7, 11), "Major 7th Chord" ],
+            [ [], (0, 3, 7, 10), "Minor 7th Chord" ],
+            [ [], (0, 4, 7, 10), "Dominant 7th Chord" ],
+            [ [], (0, 3, 6,  9), "Diminished 7th Chord" ],
+            [ [], (0, 3, 6, 10), "Half-diminished 7th Chord" ],
+            [ [], (0, 3, 7, 11), "Minor major 7th Chord" ],
+            [ [], (0, 4, 8, 11), "Augmented major 7th Chord" ],
         ],
         [
             # Primary triads
-            [ [], None, (0, 4, 7),  "Major Triad" ],
-            [ [], None, (0, 3, 7),  "Minor Triad" ],
-            [ [], None, (0, 3, 6),  "Diminished Triad" ],
-            [ [], None, (0, 4, 8),  "Augmented Triad" ],
+            [ [], (0, 4, 7),  "Major Triad" ],
+            [ [], (0, 3, 7),  "Minor Triad" ],
+            [ [], (0, 3, 6),  "Diminished Triad" ],
+            [ [], (0, 4, 8),  "Augmented Triad" ],
         ],
         [
             # Suspended triads
-            [ [], None, (0, 2, 7),  "Sus2 Triad" ],
-            [ [], None, (0, 5, 7),  "Sus4 Triad" ],
+            [ [], (0, 2, 7),  "Sus2 Triad" ],
+            [ [], (0, 5, 7),  "Sus4 Triad" ],
 
-            [ [], None, (0, 7, 9),  "6Sus Triad" ],
-            [ [], None, (0, 7, 10), "7Sus Triad" ],
+            [ [], (0, 7, 9),  "6Sus Triad" ],
+            [ [], (0, 7, 10), "7Sus Triad" ],
         ],
     ]
 
@@ -321,10 +321,9 @@ class MelodyPic:
                 chord_info[0] = [0] * 12
                 for i in range(0, 12):
                     chord_mask = 0
-                    for num_note in chord_info[2]:
+                    for num_note in chord_info[1]:
                         chord_mask |= 1 << (i + num_note) % 12
                     chord_info[0][i] = chord_mask
-            chord_info[1] = hsv_to_rgb(random.uniform(0, 360), saturation = 0.5, value = 1.0)
 
 
     def find_chords(self):
@@ -338,11 +337,11 @@ class MelodyPic:
 
         for chords_list in self.CHORDS_INFO:
             for n in range(12):
-                for chord_signatures, chord_color, chord_intervals, chord_name in chords_list:
+                for chord_signatures, chord_intervals, chord_name in chords_list:
                     note = (self.root_note + n * 7) % 12
                     chord_signature = chord_signatures[note]
                     if (pitch_classes & chord_signature) == chord_signature:
-                        chords_found.append((note % 12, chord_name, chord_intervals, chord_color))
+                        chords_found.append((note % 12, chord_name, chord_intervals))
                         #print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, self.note_names[note % 12],
                         #    pitch_classes, chord_signature, pitch_classes & ~chord_signature))
                         pitch_classes &= ~chord_signature
@@ -357,7 +356,7 @@ class MelodyPic:
         for n in range(-13, 19):
             if (self.get_vpos_from_pitch_class(n) % 24) < 12:
                 note = (self.root_note + n) % 12
-                for chord_root, chord_name, chord_intervals, chord_color in chords_found:
+                for chord_root, chord_name, chord_intervals in chords_found:
                     if note == chord_root % 12:
                         #print("Found: {} on {} ({})".format(chord_name, self.note_names[chord_root % 12], chord_intervals))
                         pitch_classes_in_chord = set()
