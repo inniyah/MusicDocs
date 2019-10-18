@@ -117,21 +117,14 @@ class MelodyPic:
         self.height = max(720, min_height_chords)
 
         self.root_note = 0
-        self.note_names = [FIFTHS_NAMES[8 + p] for p in DIATONIC_SCALE_POS]
-        self.fifths_offset = 5
+        self.note_names_base_pos = [0, -5, 2, -3, 4, 5, -6, 7, -4, 9, -2, 11][self.root_note]
+        self.note_names = [FIFTHS_NAMES[8 + self.note_names_base_pos + p] for p in DIATONIC_SCALE_POS] 
+        print(self.note_names)
+
+        self.fifths_vpos_offset = 5
 
         self.notes_active = [ 0 ] * 128
         self.pitch_classes_active = [ 0 ] * 12
-
-    def check_chord(self, chord, note=(0,0,0)):
-        base_note, base_x, base_y = note
-        notes_in_scale = True
-        for inc_note, inc_x, inc_y in chord:
-            note_value = (base_note + self.get_note_from_coords(base_x + inc_x, base_y + inc_y) % 12)
-            if not self.notes_in_scale[note_value]:
-                notes_in_scale = False
-            #print(f"{inc_note}, {inc_x}, {inc_y}: {note_value} -> {self.notes_in_scale[note_value]}")
-        return notes_in_scale
 
     def draw_circle_of_fifths(self):
         self.ctx.save()
@@ -146,7 +139,7 @@ class MelodyPic:
         self.ctx.restore()
 
     def get_vpos_from_note(self, note):
-        return note * 7 + self.fifths_offset
+        return note * 7 + self.fifths_vpos_offset
 
     def get_color_from_note(self, note, saturation=1., value=1.):
         if note == -1:
@@ -158,47 +151,47 @@ class MelodyPic:
             return (0.9, 0.9, 0.9)
         return hsv_to_rgb(360. * ((channel*17)%32)/32., saturation, value)
 
-    def draw_note(self, n):
-        note = n % 12
-        x = self.hstep * (1 + n)
-        y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
-
-        R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
-        r = R[note]
-
-        is_pressed = (self.notes_active[n] != 0)
-
-        #self.ctx.save()
-
-        if self.notes_in_scale[note]:
-            color = self.get_color_from_note(note, 1.)
-        else:
-            color = self.get_color_from_note(note, .1)
-        self.ctx.set_source_rgb(*color)
-        self.ctx.arc(x, y, r, 0, 2. * math.pi)
-        self.ctx.fill()
-
-        if self.notes_in_scale[note] or is_pressed:
-            self.ctx.set_source_rgb(0.3, 0.3, 0.3)
-        else:
-            self.ctx.set_source_rgb(0.6, 0.6, 0.6)
-        if is_pressed:
-            self.ctx.arc(x, y, r + 2.0, 0, 2. * math.pi)
-            self.ctx.set_line_width(6.0)
-        else:
-            self.ctx.arc(x, y, r, 0, 2. * math.pi)
-            self.ctx.set_line_width(2.0)
-        self.ctx.stroke()
-
-        label = self.note_names[note]
-        self.ctx.set_source_rgb(0.1, 0.1, 0.1)
-        self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        self.ctx.set_font_size(10)
-        text_extents = self.ctx.text_extents(str(label))
-        self.ctx.move_to(x - text_extents.width/2., y + text_extents.height/2.)
-        self.ctx.show_text(str(label))
-
-        #self.ctx.restore()
+#    def draw_note(self, n):
+#        note = n % 12
+#        x = self.hstep * (1 + n)
+#        y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
+#
+#        R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
+#        r = R[note]
+#
+#        is_pressed = (self.notes_active[n] != 0)
+#
+#        #self.ctx.save()
+#
+#        if self.notes_in_scale[note]:
+#            color = self.get_color_from_note(note, 1.)
+#        else:
+#            color = self.get_color_from_note(note, .1)
+#        self.ctx.set_source_rgb(*color)
+#        self.ctx.arc(x, y, r, 0, 2. * math.pi)
+#        self.ctx.fill()
+#
+#        if self.notes_in_scale[note] or is_pressed:
+#            self.ctx.set_source_rgb(0.3, 0.3, 0.3)
+#        else:
+#            self.ctx.set_source_rgb(0.6, 0.6, 0.6)
+#        if is_pressed:
+#            self.ctx.arc(x, y, r + 2.0, 0, 2. * math.pi)
+#            self.ctx.set_line_width(6.0)
+#        else:
+#            self.ctx.arc(x, y, r, 0, 2. * math.pi)
+#            self.ctx.set_line_width(2.0)
+#        self.ctx.stroke()
+#
+#        label = self.note_names[note]
+#        self.ctx.set_source_rgb(0.1, 0.1, 0.1)
+#        self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+#        self.ctx.set_font_size(10)
+#        text_extents = self.ctx.text_extents(str(label))
+#        self.ctx.move_to(x - text_extents.width/2., y + text_extents.height/2.)
+#        self.ctx.show_text(str(label))
+#
+#        #self.ctx.restore()
 
     WHITE_KEYS = set([0, 2, 4, 5, 7, 9, 11])
     WHITE_KEY_WIDTH = 18.
@@ -242,7 +235,7 @@ class MelodyPic:
                 self.ctx.arc(press_x, press_y, press_r, 0, 2. * math.pi)
                 self.ctx.fill()
 
-            label = self.note_names[n % 12]
+            label = NOTE_NAMES[n % 12]
             self.ctx.set_source_rgb(0., 0., 0.)
             self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
             self.ctx.set_font_size(8)
@@ -286,7 +279,7 @@ class MelodyPic:
                 self.ctx.arc(press_x, press_y, press_r, 0, 2. * math.pi)
                 self.ctx.fill()
 
-            label = self.note_names[n % 12]
+            label = NOTE_NAMES[n % 12]
             self.ctx.set_source_rgb(1., 1., 1.)
             self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
             self.ctx.set_font_size(6)
@@ -332,6 +325,15 @@ class MelodyPic:
                         chord_mask |= 1 << (i + num_note) % 12
                     chord_info[0][i] = chord_mask
 
+    def check_chord(self, chord, note=(0,0,0)):
+        base_note, base_x, base_y = note
+        notes_in_scale = True
+        for inc_note, inc_x, inc_y in chord:
+            note_value = (base_note + self.get_note_from_coords(base_x + inc_x, base_y + inc_y) % 12)
+            if not self.notes_in_scale[note_value]:
+                notes_in_scale = False
+            #print(f"{inc_note}, {inc_x}, {inc_y}: {note_value} -> {self.notes_in_scale[note_value]}")
+        return notes_in_scale
 
     def find_chords(self):
         chords_found = []
@@ -376,7 +378,7 @@ class MelodyPic:
                         if len(pitch_classes_in_chord) == len(chord_intervals):
                             axis_lr = (sum(pitch_classes_in_chord) / len(pitch_classes_in_chord) - 11./3) / 13.5
 
-                            vdif = [(((c * 7 + self.fifths_offset) % 12) - self.fifths_offset - c / 7.) * 7. / 24. for c in pitch_classes_in_chord]
+                            vdif = [(((c * 7 + self.fifths_vpos_offset) % 12) - self.fifths_vpos_offset - c / 7.) * 7. / 24. for c in pitch_classes_in_chord]
                             axis_ud = sum(vdif) / len(vdif) * 3. / 5.
 
                             nmaj = [(1./(n+1) if (j - i) == 4 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
@@ -398,7 +400,7 @@ class MelodyPic:
         self.ctx.restore()
 
     def get_vpos_from_pitch_class(self, note):
-        return note * 7 + self.fifths_offset
+        return note * 7 + self.fifths_vpos_offset
 
     def get_color_from_pitch(self, note, saturation=1., value=1.):
         if note == -1:
@@ -459,7 +461,8 @@ class MelodyPic:
             self.ctx.set_line_width(1.0)
             self.ctx.stroke()
 
-        label = self.note_names[n % 12]
+        label = NOTE_NAMES[n % 12]
+        #label = self.note_names[n % 12]
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         self.ctx.set_font_size(10)
