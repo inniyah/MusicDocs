@@ -242,6 +242,9 @@ class MusicDefs:
     # Sapp, Craig Stuart. "Key-Profile Comparisons in Key-Finding by Correlation." International Conference on Music Perception and Cognition (ICMPC 10); 2008, Sapporo, Japan.
     # Temperley, David. Music and Probability. MIT Press: Cambridge, Mass.; 2007. p. 85. 
 
+    ENARMONIC_NOTE_NAMES = [ 'C',     'Db/C#','D',     'Eb/D#', 'E',     'F',     'Gb/F#', 'G',     'Ab/G#', 'A',     'Bb/A#', 'B'  ]
+    INTERVAL_NAMES =       [ 'I',     'ii',   'II',      'iii', 'III',   'IV',    'v',     'V',     'vi',    'VI',    'vii',   'VII' ]
+
 def ks_key(X):
     '''Estimate the key from a pitch class distribution
     

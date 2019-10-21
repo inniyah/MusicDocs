@@ -117,7 +117,7 @@ class MelodyPic:
         self.height = max(720, min_height_chords)
 
         self.root_note = 0
-        self.note_names_base_pos = [0, -5, 2, -3, 4, 5, -6, 7, -4, 9, -2, 11][self.root_note]
+        self.note_names_base_pos = [0, -5, 2, -3, 4, -1, -6, 1, -4, 3, -2, 5][self.root_note]
         self.note_names = [FIFTHS_NAMES[8 + self.note_names_base_pos + p] for p in DIATONIC_SCALE_POS] 
         print(self.note_names)
 
