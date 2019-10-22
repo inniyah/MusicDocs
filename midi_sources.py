@@ -105,6 +105,8 @@ class MidiFileSoundPlayer():
         length = self.midi_file.length
         eprint('Song length: {} minutes, {} seconds'.format(int(length / 60), int(length % 60)))
 
+        eprint('Ticks per Beat: {}'.format(self.midi_file.ticks_per_beat))
+
         self.pitch_histograms = []
         self.instruments = set()
         eprint('Tracks:')
@@ -160,7 +162,10 @@ class MidiFileSoundPlayer():
 
             elif message.type == 'set_tempo':
                 eprint('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))
-                pass
+            elif message.type == 'time_signature':
+                eprint('Time signature changed to {}/{}. Clocks per tick: {}'.format(message.numerator, message.denominator, message.clocks_per_click))
+            elif message.type == 'key_signature':
+                eprint('Key signature changed to {}'.format(message.key))
 
     def __del__(self): # See:https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/
         self.fs.delete()
@@ -213,6 +218,7 @@ class RtMidiSoundPlayer():
                 if self.keyboard_handlers:
                     for keyboard_handler in self.keyboard_handlers:
                         keyboard_handler.press(midi_msg[1], 16, True)
+                        #keyboard_handler.change_root(midi_msg[1])
 
             else: # A note was released
                 if self.keyboard_handlers:

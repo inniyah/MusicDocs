@@ -110,10 +110,7 @@ class MelodyPic:
         self.width = 1280
         self.height = max(720, min_height_chords)
 
-        self.root_note = 0
-        self.scale = MusicScale(self.root_note)
-        self.note_names = self.scale.getChromaticNoteNames()
-        print(self.note_names)
+        self.change_root(0)
 
         self.fifths_vpos_offset = 5
 
@@ -145,48 +142,6 @@ class MelodyPic:
             return (0.9, 0.9, 0.9)
         return hsv_to_rgb(360. * ((channel*17)%32)/32., saturation, value)
 
-#    def draw_note(self, n):
-#        note = n % 12
-#        x = self.hstep * (1 + n)
-#        y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
-#
-#        R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
-#        r = R[note]
-#
-#        is_pressed = (self.notes_active[n] != 0)
-#
-#        #self.ctx.save()
-#
-#        if self.notes_in_scale[note]:
-#            color = self.get_color_from_note(note, 1.)
-#        else:
-#            color = self.get_color_from_note(note, .1)
-#        self.ctx.set_source_rgb(*color)
-#        self.ctx.arc(x, y, r, 0, 2. * math.pi)
-#        self.ctx.fill()
-#
-#        if self.notes_in_scale[note] or is_pressed:
-#            self.ctx.set_source_rgb(0.3, 0.3, 0.3)
-#        else:
-#            self.ctx.set_source_rgb(0.6, 0.6, 0.6)
-#        if is_pressed:
-#            self.ctx.arc(x, y, r + 2.0, 0, 2. * math.pi)
-#            self.ctx.set_line_width(6.0)
-#        else:
-#            self.ctx.arc(x, y, r, 0, 2. * math.pi)
-#            self.ctx.set_line_width(2.0)
-#        self.ctx.stroke()
-#
-#        label = self.note_names[note]
-#        self.ctx.set_source_rgb(0.1, 0.1, 0.1)
-#        self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-#        self.ctx.set_font_size(10)
-#        text_extents = self.ctx.text_extents(str(label))
-#        self.ctx.move_to(x - text_extents.width/2., y + text_extents.height/2.)
-#        self.ctx.show_text(str(label))
-#
-#        #self.ctx.restore()
-
     WHITE_KEYS = set([0, 2, 4, 5, 7, 9, 11])
     WHITE_KEY_WIDTH = 18.
     BLACK_KEY_WIDTH = WHITE_KEY_WIDTH * 7. / 12.
@@ -213,7 +168,7 @@ class MelodyPic:
             self.ctx.close_path()
             self.ctx.set_source_rgb(*color)
             if (n % 12) == self.root_note:
-                self.ctx.set_source_rgb(1.0, 1.0, 0.9)
+                self.ctx.set_source_rgb(1.0, 1.0, 0.8)
             self.ctx.fill_preserve()
             self.ctx.set_source_rgb(0.5, 0.5, 0.5)
             self.ctx.set_line_width(1)
@@ -506,47 +461,6 @@ class MelodyPic:
         self.draw_white_keys()
         self.draw_black_keys()
 
-#        num_notes_in_screen = int(self.width / self.hstep) - 34
-
-#        # Connection between fiths
-#        for n in range(num_notes_in_screen - 1):
-#            x = self.hstep * (1 + n)
-#            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
-#            x2 = self.hstep * (1 + (n+1))
-#            y2 = self.height - self.hstep - (self.get_vpos_from_note(n+1) % 12) * self.vstep
-#            self.ctx.set_source_rgb(0.95, 0.95, 0.95)
-#            self.ctx.move_to(x, y)
-#            self.ctx.line_to(x2, y2)
-#            self.ctx.stroke()
-
-#        # Horizontal lines
-#        for n in range(12):
-#            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
-#            color = self.get_color_from_note(n, 1. if self.notes_in_scale[n % 12] else 0.2)
-#            self.ctx.set_source_rgb(*color)
-#            self.ctx.move_to(0, y)
-#            self.ctx.line_to(self.width, y)
-#            self.ctx.stroke()
-
-#        # Vertical lines
-#        base_note = NOTE_MIDI_C4 - 12 * 2 
-#        for n in range(num_notes_in_screen):
-#            note = base_note + n
-#            channel = self.notes_active[note].bit_length() - 1
-#            x = self.hstep * (1 + n)
-#            y = self.height - self.hstep - (self.get_vpos_from_note(n) % 12) * self.vstep
-#            if channel >= 0:
-#                self.ctx.set_source_rgb(*hsv_to_rgb(360. * ((channel*9)%16) / 16., 1.0, 0.6))
-#            else:
-#                self.ctx.set_source_rgb(0.8, 0.8, 0.8)
-#            self.ctx.move_to(x, self.height)
-#            self.ctx.line_to(x, y)
-#            self.ctx.stroke()
-
-#        # Notes
-#        for n in range(num_notes_in_screen):
-#            self.draw_note(n)
-
         self.draw_chords()
         self.draw_pitch_classes()
 
@@ -560,3 +474,8 @@ class MelodyPic:
                 self.notes_active[num_key] &= ~(1<<channel)
                 self.pitch_classes_active[num_key % 12] -= 1
 
+    def change_root(self, num_key):
+        self.root_note = (num_key % 12)
+        self.scale = MusicScale(self.root_note)
+        self.note_names = self.scale.getChromaticNoteNames()
+        print(self.note_names)
