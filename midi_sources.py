@@ -8,7 +8,7 @@ import sys
 
 from threading import Thread, Lock
 
-from general_midi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
+from GeneralMidi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)

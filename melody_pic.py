@@ -8,20 +8,14 @@ import os
 import queue
 import sys
 
-from general_midi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
+from MusicDefs import MusicDefs
+from MusicScale import MusicScale
+from GeneralMidi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
 
 SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<<11)
 
-NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
-
-FIFTHS_NAMES = [
-    'Fb', 'Cb', 'Gb', 'Db', 'Ab', 'Eb', 'Bb',
-    'F',  'C',  'G',  'D',  'A',  'E',  'B',
-    'F#', 'C#', 'G#', 'D#', 'A#', 'E#', 'B#',
-    'Fx', 'Cx', 'Gx', 'Dx', 'Ax', 'Ex', 'Bx',
-]
-
-DIATONIC_SCALE_POS = [ 0, 7, 2, 9, 4, -1, 6, 1, 8, 3, 10, 5 ]
+#PIANO_NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
+PIANO_NOTE_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 
 NOTE_MIDI_A4 = 69
 NOTE_MIDI_C4 = 60
@@ -117,8 +111,8 @@ class MelodyPic:
         self.height = max(720, min_height_chords)
 
         self.root_note = 0
-        self.note_names_base_pos = [0, -5, 2, -3, 4, -1, -6, 1, -4, 3, -2, 5][self.root_note]
-        self.note_names = [FIFTHS_NAMES[8 + self.note_names_base_pos + p] for p in DIATONIC_SCALE_POS] 
+        self.scale = MusicScale(self.root_note)
+        self.note_names = self.scale.getChromaticNoteNames()
         print(self.note_names)
 
         self.fifths_vpos_offset = 5
@@ -235,7 +229,7 @@ class MelodyPic:
                 self.ctx.arc(press_x, press_y, press_r, 0, 2. * math.pi)
                 self.ctx.fill()
 
-            label = NOTE_NAMES[n % 12]
+            label = PIANO_NOTE_NAMES[n % 12]
             self.ctx.set_source_rgb(0., 0., 0.)
             self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
             self.ctx.set_font_size(8)
@@ -279,7 +273,7 @@ class MelodyPic:
                 self.ctx.arc(press_x, press_y, press_r, 0, 2. * math.pi)
                 self.ctx.fill()
 
-            label = NOTE_NAMES[n % 12]
+            label = PIANO_NOTE_NAMES[n % 12]
             self.ctx.set_source_rgb(1., 1., 1.)
             self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
             self.ctx.set_font_size(6)
@@ -436,9 +430,9 @@ class MelodyPic:
         #self.ctx.save()
 
         if self.notes_in_scale[n % 12]:
-            color = self.get_color_from_note(n, 1.)
+            color = self.get_color_from_note((self.root_note + n) % 12, 1.)
         else:
-            color = self.get_color_from_note(n, .1)
+            color = self.get_color_from_note((self.root_note + n) % 12, .1)
         self.ctx.set_source_rgb(*color)
         self.ctx.arc(x, y, r, 0, 2. * math.pi)
         self.ctx.fill()
@@ -461,7 +455,7 @@ class MelodyPic:
             self.ctx.set_line_width(1.0)
             self.ctx.stroke()
 
-        label = NOTE_NAMES[n % 12]
+        label = self.note_names[n % 12]
         #label = self.note_names[n % 12]
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
