@@ -198,50 +198,6 @@ class MusicDefs:
     RATIO_CHORD_SEVENTH_MIN_VIIMAJ = [ 40, 48, 60, 75 ]
     RATIO_CHORD_SEVENTH_AUG_VIIMAJ = [ 40, 48, 64, 75 ]
 
-    # Key Finding
-
-    KEY_FINDING_KRUMHANSL_KESSLER = [ # Krumhansl-Kessler probe-tone profiles
-    # Strong tendancy to identify the dominant key as the tonic
-        [ 6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88 ], # Major
-        [ 6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17 ], # Minor
-    ]
-
-    KEY_FINDING_AARDEN_ESSEN = [ # Aarden-Essen continuity profiles
-    # Weak tendancy to identify the subdominant key as the tonic
-        [ 17.7661, 0.145624, 14.9265, 0.160186, 19.8049, 11.3587, 0.291248, 22.062, 0.145624, 8.15494, 0.232998, 4.95122 ], # Major
-        [ 18.2648, 0.737619, 14.0499, 16.8599, 0.702494, 14.4362, 0.702494, 18.6161, 4.56621, 1.93186, 7.37619,  1.75623 ], # Minor
-    ]
-
-    KEY_FINDING_SIMPLE_PITCH = [ # Simple pitch profiles
-    # Performs most consistently with large regions of music, becomes noiser with smaller regions of music.
-        [ 2.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 1.0 ], # Major
-        [ 2.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 2.0, 1.0, 0.0, 0.5, 0.5 ], # Minor
-    ]
-
-    KEY_FINDING_BELLMAN_BUDGE = [ # Bellman-Budge chord-based profiles
-    # No particular tendancies for confusions with neighboring keys
-        [ 16.80, 0.86, 12.95, 1.41, 13.49, 11.93, 1.25, 20.28, 1.80, 8.04, 0.62, 10.57 ], # Major
-        [ 18.16, 0.69, 12.99, 13.34, 1.07, 11.15, 1.38, 21.07, 7.49, 1.53, 0.92, 10.21 ], # Minor
-    ]
-
-    KEY_FINDING_TEMPERLEY_KOSTKA_PAYNE = [ # Temperley-Kostka-Payne chord-based profiles
-    # Strong tendency to identify the relative major as the tonic in minor keys. Well-balanced for major keys
-        [ 0.748, 0.060, 0.488, 0.082, 0.670, 0.460, 0.096, 0.715, 0.104, 0.366, 0.057, 0.400 ], # Major
-        [ 0.712, 0.084, 0.474, 0.618, 0.049, 0.460, 0.105, 0.747, 0.404, 0.067, 0.133, 0.330 ], # Minor
-    ]
-
-    # Reference Web Pages:
-    # Key-finding algorithm: http://rnhart.net/articles/key-finding/
-    # keycor manpage: http://extras.humdrum.org/man/keycor/
-
-    # Bibliography:
-    # Aarden, Bret. Dynamic Melodic Expectancy. Ph.D. dissertation. School of Music, Ohio State University; 2003.
-    # Bellman, Héctor. "About the determination of key of a musical excerpt" in Proceedings of Computer Music Modeling and Retrieval (CMMR): Pisa, Italy; 2005. pp. 187-203.
-    # Gabura, James A. "Music style analysis by computer" in Lincoln, Harry B., ed., The Computer and Music. Cornell University Press: Ithaca, New York; 1970.
-    # Krumhansl, Carol. Cognitive Foundations of Musical Pitch. Oxford Psychology Series No. 17. Oxford University Press: New York; 1990. pp. 37, 81-96.
-    # Sapp, Craig Stuart. "Key-Profile Comparisons in Key-Finding by Correlation." International Conference on Music Perception and Cognition (ICMPC 10); 2008, Sapporo, Japan.
-    # Temperley, David. Music and Probability. MIT Press: Cambridge, Mass.; 2007. p. 85. 
-
     ENARMONIC_NOTE_NAMES = [ 'C',     'Db/C#','D',     'Eb/D#', 'E',     'F',     'Gb/F#', 'G',     'Ab/G#', 'A',     'Bb/A#', 'B'  ]
     INTERVAL_NAMES =       [ 'I',     'ii',   'II',      'iii', 'III',   'IV',    'v',     'V',     'vi',    'VI',    'vii',   'VII' ]
 
