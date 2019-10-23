@@ -136,6 +136,10 @@ class MidiFileSoundPlayer():
         #self.last_notes = FifoList()
 
     def play(self):
+        if self.midi_file.type == 2:
+            # Can't merge tracks in type 2 (asynchronous) file
+            return
+
         channel_programs = [0] * 16
 
         start_time = time.time() + 1.
