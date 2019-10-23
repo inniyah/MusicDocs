@@ -105,35 +105,49 @@ class MidiFileSoundPlayer():
         length = self.midi_file.length
         eprint('Song length: {} minutes, {} seconds'.format(int(length / 60), int(length % 60)))
 
-        eprint('Ticks per Beat: {}'.format(self.midi_file.ticks_per_beat))
+        tempo = 500000
+        ticks_per_beat = self.midi_file.ticks_per_beat
+        time_signature_numerator = 4
+        time_signature_denominator = 4
+        clocks_per_click = 24
+        notated_32nd_notes_per_beat = 8
 
-        self.pitch_histograms = []
+        num_ticks = 0
+        num_bar = 1
+
+        pitch_histogram = [0] * 12
         self.instruments = set()
-        eprint('Tracks:')
-        for i, track in enumerate(self.midi_file.tracks):
-            num_ticks = 0
-            pitch_histogram = [0] * 12
-            eprint('  {:2d}: {!r} ({} messages)'.format(i, track.name.strip(), len(track)))
-            for message in track:
-                if isinstance(message, mido.Message):
-                    if message.type == 'note_on':
-                        pitch_histogram[message.note % 12] += 1
-                        #eprint(message)
-                        pass
-                    elif message.type == 'note_off':
-                        #eprint(message)
-                        pass
-                    elif message.type == 'program_change':
-                        self.instruments.add(message.program)
+        for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
+            ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
 
-                if not isinstance(message, mido.MetaMessage):
-                    num_ticks += message.time
+            if isinstance(message, mido.Message):
+                if message.type == 'note_on':
+                    pitch_histogram[message.note % 12] += 1
+                elif message.type == 'note_off':
+                    pitch_histogram[message.note % 12] -= 1
+                elif message.type == 'program_change':
+                    self.instruments.add(message.program)
+                num_ticks += message.time
 
-            self.pitch_histograms.append(pitch_histogram)
-        eprint(self.pitch_histograms)
+            elif isinstance(message, mido.MetaMessage):
+                if message.type == 'set_tempo':
+                    tempo = message.tempo
+                elif message.type == 'time_signature':
+                    time_signature_numerator = message.numerator
+                    time_signature_denominator = message.denominator
+                    clocks_per_click = message.clocks_per_click
+                    notated_32nd_notes_per_beat = message.notated_32nd_notes_per_beat
+                    num_ticks = 0
+                elif message.type == 'key_signature':
+                    eprint('Key signature changed to {}'.format(message.key))
+
+            while num_ticks >= ticks_in_measure:
+                num_bar += 1
+                num_ticks -= ticks_in_measure
+                eprint(f"{num_bar}: {pitch_histogram}")
+
+        eprint(f"end: {pitch_histogram}")
         eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
-
-        #self.last_notes = FifoList()
 
     def play(self):
         if self.midi_file.type == 2:
@@ -238,6 +252,7 @@ class MidiFileSoundPlayer():
                     time_signature_denominator = message.denominator
                     clocks_per_click = message.clocks_per_click
                     notated_32nd_notes_per_beat = message.notated_32nd_notes_per_beat
+                    num_ticks = 0
                     eprint('Time signature changed to {}/{}. Clocks per click: {}'.format(message.numerator, message.denominator, message.clocks_per_click))
                 elif message.type == 'key_signature':
                     eprint('Key signature changed to {}'.format(message.key))
