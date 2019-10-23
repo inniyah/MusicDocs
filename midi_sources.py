@@ -152,8 +152,13 @@ class MidiFileSoundPlayer():
         # Note that integer rounding of the result might be necessary because MIDI files require ticks to be integers.
         ticks_per_beat = self.midi_file.ticks_per_beat
 
-        for message in self.midi_file:
-            input_time += message.time
+        for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
+            if message.time > 0:
+                time_delta = mido.midifiles.units.tick2second(message.time, self.midi_file.ticks_per_beat, tempo)
+            else:
+                time_delta = 0
+
+            input_time += time_delta
             playback_time = time.time() - start_time
             time_to_next_event = input_time - playback_time
 
@@ -194,6 +199,7 @@ class MidiFileSoundPlayer():
 
             elif isinstance(message, mido.MetaMessage):
                 if message.type == 'set_tempo':
+                    tempo = message.tempo
                     eprint('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))
                 elif message.type == 'time_signature':
                     eprint('Time signature changed to {}/{}. Clocks per tick: {}'.format(message.numerator, message.denominator, message.clocks_per_click))
