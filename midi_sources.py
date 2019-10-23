@@ -137,10 +137,17 @@ class MidiFileSoundPlayer():
 
     def play(self):
         channel_programs = [0] * 16
-        time.sleep(1)
+
+        start_time = time.time() + 1.
+        input_time = 0.0
 
         for message in self.midi_file:
-            time.sleep(message.time)
+            input_time += message.time
+            playback_time = time.time() - start_time
+            time_to_next_event = input_time - playback_time
+
+            if time_to_next_event > 0.0:
+                time.sleep(time_to_next_event)
 
             current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
             #sys.stdout.write(repr(message) + '\n')
