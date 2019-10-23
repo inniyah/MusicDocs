@@ -144,7 +144,6 @@ class MidiFileSoundPlayer():
 
         start_time = time.time() + 1.
         input_time = 0.0
-        num_ticks = 0
 
         # The default tempo is 500000 microseconds per beat, which is 120 beats per minute (BPM)
         # You can use bpm2tempo() and tempo2bpm() to convert to and from beats per minute.
@@ -156,7 +155,32 @@ class MidiFileSoundPlayer():
         # Note that integer rounding of the result might be necessary because MIDI files require ticks to be integers.
         ticks_per_beat = self.midi_file.ticks_per_beat
 
+        # A Time Signature is two numbers, one on top of the other. The numerator describes the number of beats in a Bar,
+        # while the denominator describes of what note value a beat is (ie, how many quarter notes there are in a beat).
+        # If a time signature message is not present in a MIDI sequence, 4/4 signature is assumed.
+        # 4/4 would be four quarter-notes per bar (MIDI default)
+        # 4/2 would be four half-notes per bar (or 8 quarter notes)
+        # 4/8 would be four eighth-notes per bar (or 2 quarter notes)
+        # 2/4 would be two quarter-notes per bar
+        time_signature_numerator = 4
+        time_signature_denominator = 4
+
+        # Metronome pulse in terms of the number of MIDI clock ticks per click
+        # Assuming 24 MIDI clocks per quarter note, if the value of the sixth byte is 48, the metronome will click every
+        # two quarter notes, or in other words, every half-note
+        clocks_per_click = 24
+
+        # Number of 32nd notes per beat. This byte is usually 8 as there is usually one quarter note per beat
+        # and one quarter note contains eight 32nd notes.
+        notated_32nd_notes_per_beat = 8
+
+        num_ticks = 0
+        num_bar = 1
+        num_beat = 1
+
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
+            ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
+
             if message.time > 0:
                 time_delta = mido.midifiles.units.tick2second(message.time, self.midi_file.ticks_per_beat, tempo)
             else:
@@ -173,7 +197,11 @@ class MidiFileSoundPlayer():
 
             if not isinstance(message, mido.MetaMessage):
                 num_ticks += message.time
-                eprint(num_ticks)
+
+            while num_ticks >= ticks_in_measure:
+                num_bar += 1
+                num_ticks -= ticks_in_measure
+                eprint(f"{num_bar}")
 
             current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
             #sys.stdout.write(repr(message) + '\n')
@@ -206,7 +234,11 @@ class MidiFileSoundPlayer():
                     tempo = message.tempo
                     eprint('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))
                 elif message.type == 'time_signature':
-                    eprint('Time signature changed to {}/{}. Clocks per tick: {}'.format(message.numerator, message.denominator, message.clocks_per_click))
+                    time_signature_numerator = message.numerator
+                    time_signature_denominator = message.denominator
+                    clocks_per_click = message.clocks_per_click
+                    notated_32nd_notes_per_beat = message.notated_32nd_notes_per_beat
+                    eprint('Time signature changed to {}/{}. Clocks per click: {}'.format(message.numerator, message.denominator, message.clocks_per_click))
                 elif message.type == 'key_signature':
                     eprint('Key signature changed to {}'.format(message.key))
 
