@@ -140,14 +140,31 @@ class MidiFileSoundPlayer():
 
         start_time = time.time() + 1.
         input_time = 0.0
+        num_ticks = 0
+
+        # The default tempo is 500000 microseconds per beat, which is 120 beats per minute (BPM)
+        # You can use bpm2tempo() and tempo2bpm() to convert to and from beats per minute.
+        # Note that tempo2bpm() may return a floating point number.
+        tempo = 500000
+
+        # Also called Pulses per Quarter note or PPQ. Typical values range from 96 to 480
+        # You can use tick2second() and second2tick() to convert to and from seconds and ticks.
+        # Note that integer rounding of the result might be necessary because MIDI files require ticks to be integers.
+        ticks_per_beat = self.midi_file.ticks_per_beat
 
         for message in self.midi_file:
             input_time += message.time
             playback_time = time.time() - start_time
             time_to_next_event = input_time - playback_time
 
+            # Find bar:beat:subbeat
+
             if time_to_next_event > 0.0:
                 time.sleep(time_to_next_event)
+
+            if not isinstance(message, mido.MetaMessage):
+                num_ticks += message.time
+                eprint(num_ticks)
 
             current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
             #sys.stdout.write(repr(message) + '\n')
@@ -175,12 +192,13 @@ class MidiFileSoundPlayer():
                     self.fs.program_select(message.channel, self.sfid, 0, message.program)
                     eprint('Program for {} changed to {} ("{}")'.format(message.channel, message.program, MIDI_GM1_INSTRUMENT_NAMES[message.program + 1]))
 
-            elif message.type == 'set_tempo':
-                eprint('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))
-            elif message.type == 'time_signature':
-                eprint('Time signature changed to {}/{}. Clocks per tick: {}'.format(message.numerator, message.denominator, message.clocks_per_click))
-            elif message.type == 'key_signature':
-                eprint('Key signature changed to {}'.format(message.key))
+            elif isinstance(message, mido.MetaMessage):
+                if message.type == 'set_tempo':
+                    eprint('Tempo changed to {:.1f} BPM.'.format(mido.tempo2bpm(message.tempo)))
+                elif message.type == 'time_signature':
+                    eprint('Time signature changed to {}/{}. Clocks per tick: {}'.format(message.numerator, message.denominator, message.clocks_per_click))
+                elif message.type == 'key_signature':
+                    eprint('Key signature changed to {}'.format(message.key))
 
     def __del__(self): # See:https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/
         self.fs.delete()
