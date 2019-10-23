@@ -111,6 +111,7 @@ class MidiFileSoundPlayer():
         self.instruments = set()
         eprint('Tracks:')
         for i, track in enumerate(self.midi_file.tracks):
+            num_ticks = 0
             pitch_histogram = [0] * 12
             eprint('  {:2d}: {!r} ({} messages)'.format(i, track.name.strip(), len(track)))
             for message in track:
@@ -124,6 +125,10 @@ class MidiFileSoundPlayer():
                         pass
                     elif message.type == 'program_change':
                         self.instruments.add(message.program)
+
+                if not isinstance(message, mido.MetaMessage):
+                    num_ticks += message.time
+
             self.pitch_histograms.append(pitch_histogram)
         eprint(self.pitch_histograms)
         eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
@@ -133,7 +138,10 @@ class MidiFileSoundPlayer():
     def play(self):
         channel_programs = [0] * 16
         time.sleep(1)
-        for message in self.midi_file.play(meta_messages=True):
+
+        for message in self.midi_file:
+            time.sleep(message.time)
+
             current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
             #sys.stdout.write(repr(message) + '\n')
             #sys.stdout.flush()
