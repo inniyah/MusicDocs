@@ -13,6 +13,13 @@ from GeneralMidi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+# See: The Cognition of Basic Musical Structures, by David Temperley, p. 180
+# Basic primacy of the diatonic scale: all diatonic steps have higher values than chromatic ones
+# All the diatonic degrees have a value of at least 3.5
+# All the chromatic degrees have a value of 2.0, with the exception of vii
+MUSIC_KEY_PROFILE_MAYOR = [ 5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0 ] # Major scale
+MUSIC_KEY_PROFILE_MINOR = [ 5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0 ] # Harmonic minor scale
+
 class FifoList():
     def __init__(self):
         self.data = {}
@@ -91,6 +98,13 @@ class RandomSoundPlayer():
             self.press(key, velocity, duration)
         #if self.keyboard_handler: self.keyboard_handler.show(False)
 
+def guess_scale(music_key, scale_type, pitch_histogram):
+    major_values = [sum([MUSIC_KEY_PROFILE_MAYOR[i] if pitch_histogram[(key + i)%12] > 0 else 0. for i in range(12)]) for key in range(12)]
+    minor_values = [sum([MUSIC_KEY_PROFILE_MINOR[i] if pitch_histogram[(key + i)%12] > 0 else 0. for i in range(12)]) for key in range(12)]
+    eprint(f"{pitch_histogram} -> {major_values} {minor_values}")
+
+    return music_key, scale_type
+
 class MidiFileSoundPlayer():
     def __init__(self, filename, keyboard_handlers=None):
         self.keyboard_handlers = keyboard_handlers
@@ -114,11 +128,14 @@ class MidiFileSoundPlayer():
 
         num_ticks = 0
         num_bar = 1
+        scale_key = 0 # C
+        scale_type = 0 # Major
 
         pitch_histogram = [0] * 12
         self.instruments = set()
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
             ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            time_of_measure = mido.midifiles.units.tick2second(ticks_in_measure, self.midi_file.ticks_per_beat, tempo)
 
             if isinstance(message, mido.Message):
                 if message.type == 'note_on':
@@ -139,12 +156,14 @@ class MidiFileSoundPlayer():
                     notated_32nd_notes_per_beat = message.notated_32nd_notes_per_beat
                     num_ticks = 0
                 elif message.type == 'key_signature':
+                    #music_key = message.key
                     eprint('Key signature changed to {}'.format(message.key))
 
             while num_ticks >= ticks_in_measure:
+                #eprint(f"{num_bar}: {pitch_histogram} ({time_of_measure:1f} s)")
+                scale_key, scale_type = guess_scale(scale_key, scale_type, pitch_histogram)
                 num_bar += 1
                 num_ticks -= ticks_in_measure
-                eprint(f"{num_bar}: {pitch_histogram}")
 
         eprint(f"end: {pitch_histogram}")
         eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
