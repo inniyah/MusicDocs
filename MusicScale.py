@@ -64,6 +64,7 @@ class MusicScale():
     # See: https://www.extremraym.com/en/downloads/reascripts-midi-key-finder/
     # See: https://labs.la.utexas.edu/gilden/files/2016/04/temperley-maai.pdf
     # See: http://people.bu.edu/jyust/amsAthens2016.pdf
+    # See: http://davidtemperley.com/kp-stats/
 
     def __init__(self, root_note):
         self.root_note = root_note
