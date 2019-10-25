@@ -201,6 +201,12 @@ class MusicDefs:
     ENARMONIC_NOTE_NAMES = [ 'C',     'Db/C#','D',     'Eb/D#', 'E',     'F',     'Gb/F#', 'G',     'Ab/G#', 'A',     'Bb/A#', 'B'  ]
     INTERVAL_NAMES =       [ 'I',     'ii',   'II',      'iii', 'III',   'IV',    'v',     'V',     'vi',    'VI',    'vii',   'VII' ]
 
+    # Sound Fonts:
+    # https://trisamples.com/free-soundfonts/
+    # https://musescore.org/en/node/103046
+    # http://www.synthfont.com/links_to_soundfonts.html
+    # https://www.kvraudio.com/forum/viewtopic.php?f=42&t=351893
+
 def ks_key(X):
     '''Estimate the key from a pitch class distribution
     

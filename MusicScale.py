@@ -65,6 +65,8 @@ class MusicScale():
     # See: https://labs.la.utexas.edu/gilden/files/2016/04/temperley-maai.pdf
     # See: http://people.bu.edu/jyust/amsAthens2016.pdf
     # See: http://davidtemperley.com/kp-stats/
+    # See: https://github.com/dharasim/MCR/wiki
+    # See: https://musicinformationretrieval.wordpress.com/2017/01/20/symbolic-chord-detection-2/
 
     def __init__(self, root_note):
         self.root_note = root_note

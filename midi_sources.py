@@ -5,6 +5,8 @@ import rtmidi
 import mido
 import time
 import sys
+import collections
+import bisect
 
 from threading import Thread, Lock
 
@@ -126,25 +128,38 @@ class MidiFileSoundPlayer():
         clocks_per_click = 24
         notated_32nd_notes_per_beat = 8
 
-        num_ticks = 0
+        count_ticks_in_total = 0
+        count_ticks_in_beat = 0
+        count_ticks_in_measure = 0
         num_bar = 1
+        num_beat = 1
+        pitch_classes_in_beat = 0
+
+        # See: https://www.geeksforgeeks.org/python-find-the-closest-key-in-dictionary/
+        self.chords = collections.OrderedDict() 
+
         scale_key = 0 # C
         scale_type = 0 # Major
 
         pitch_histogram = [0] * 12
         self.instruments = set()
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
-            ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
-            time_of_measure = mido.midifiles.units.tick2second(ticks_in_measure, self.midi_file.ticks_per_beat, tempo)
+            total_ticks_in_beat = ticks_per_beat * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            total_ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            time_of_measure = mido.midifiles.units.tick2second(total_ticks_in_measure, self.midi_file.ticks_per_beat, tempo)
 
             if isinstance(message, mido.Message):
                 if message.type == 'note_on':
                     pitch_histogram[message.note % 12] += 1
+                    pitch_classes_in_beat |= 1 << (message.note % 12)
                 elif message.type == 'note_off':
                     pitch_histogram[message.note % 12] -= 1
                 elif message.type == 'program_change':
                     self.instruments.add(message.program)
-                num_ticks += message.time
+
+                count_ticks_in_total += message.time
+                count_ticks_in_measure += message.time
+                count_ticks_in_beat += message.time
 
             elif isinstance(message, mido.MetaMessage):
                 if message.type == 'set_tempo':
@@ -159,11 +174,18 @@ class MidiFileSoundPlayer():
                     #music_key = message.key
                     eprint('Key signature changed to {}'.format(message.key))
 
-            while num_ticks >= ticks_in_measure:
+            while count_ticks_in_beat >= total_ticks_in_beat:
+                num_beat += 1
+                count_ticks_in_beat -= total_ticks_in_beat
+                self.chords[count_ticks_in_total] = pitch_classes_in_beat
+                #eprint(f"beat@{count_ticks_in_total}: {num_beat} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
+                pitch_classes_in_beat = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
+
+            while count_ticks_in_measure >= total_ticks_in_measure:
                 #eprint(f"{num_bar}: {pitch_histogram} ({time_of_measure:1f} s)")
                 scale_key, scale_type = guess_scale(scale_key, scale_type, pitch_histogram)
                 num_bar += 1
-                num_ticks -= ticks_in_measure
+                count_ticks_in_measure -= total_ticks_in_measure
 
         eprint(f"end: {pitch_histogram}")
         eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
@@ -207,12 +229,15 @@ class MidiFileSoundPlayer():
         # and one quarter note contains eight 32nd notes.
         notated_32nd_notes_per_beat = 8
 
-        num_ticks = 0
+        count_ticks_in_total = 0
+        count_ticks_in_beat = 0
+        count_ticks_in_measure = 0
         num_bar = 1
         num_beat = 1
 
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
-            ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            total_ticks_in_beat = ticks_per_beat * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            total_ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
 
             if message.time > 0:
                 time_delta = mido.midifiles.units.tick2second(message.time, self.midi_file.ticks_per_beat, tempo)
@@ -229,12 +254,21 @@ class MidiFileSoundPlayer():
                 time.sleep(time_to_next_event)
 
             if not isinstance(message, mido.MetaMessage):
-                num_ticks += message.time
+                count_ticks_in_total += message.time
+                count_ticks_in_measure += message.time
+                count_ticks_in_beat += message.time
 
-            while num_ticks >= ticks_in_measure:
+            while count_ticks_in_beat >= total_ticks_in_beat:
+                num_beat += 1
+                count_ticks_in_beat -= total_ticks_in_beat
+                tick_num = bisect.bisect_left(list(self.chords.keys()), count_ticks_in_total) 
+                pitch_classes_in_beat = self.chords[count_ticks_in_total] 
+                eprint(f"beat@{count_ticks_in_total}: {num_beat} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
+
+            while count_ticks_in_measure >= total_ticks_in_measure:
                 num_bar += 1
-                num_ticks -= ticks_in_measure
-                eprint(f"{num_bar}")
+                count_ticks_in_measure -= total_ticks_in_measure
+                eprint(f"bar: {num_bar}")
 
             current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
             #sys.stdout.write(repr(message) + '\n')
@@ -288,6 +322,9 @@ class RtMidiSoundPlayer():
         self.fs.start(driver="alsa")
         eprint("FluidSynth Started")
         self.sfid = self.fs.sfload("/usr/share/sounds/sf2/FluidR3_GM.sf2")
+        #self.sfid = self.fs.sfload("OmegaGMGS2.sf2")
+        #self.sfid = self.fs.sfload("GeneralUser GS 1.471/GeneralUser GS v1.471.sf2")
+        #self.sfid = self.fs.sfload("Compifont_13082016.sf2")
         self.fs.program_select(0, self.sfid, 0, 0)
 
         self.midi_in = rtmidi.MidiIn()
