@@ -109,6 +109,7 @@ def main():
 
     midi_filename = 'Hallelujah.mid'
     #midi_filename = 'borodin_polovtsian.mid'
+    #midi_filename = 'Debussy_Arabesque_No1.mid'
     if not midi_filename is None:
         midi_file_player = MidiFileSoundPlayer(midi_filename, [pic])
         midi_thread = Thread(target = midi_file_player.play)

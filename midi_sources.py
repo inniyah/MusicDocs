@@ -143,7 +143,7 @@ class MidiFileSoundPlayer():
         pitch_histogram = [0] * 12
         self.instruments = set()
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
-            total_ticks_in_beat = ticks_per_beat * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            total_ticks_in_beat = ticks_per_beat * 4 / time_signature_denominator
             total_ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
             time_of_measure = mido.midifiles.units.tick2second(total_ticks_in_measure, self.midi_file.ticks_per_beat, tempo)
 
@@ -238,7 +238,7 @@ class MidiFileSoundPlayer():
         num_beat = 1
 
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
-            total_ticks_in_beat = ticks_per_beat * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            total_ticks_in_beat = ticks_per_beat * 4 / time_signature_denominator
             total_ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
 
             if message.time > 0:
@@ -308,9 +308,9 @@ class MidiFileSoundPlayer():
                     clocks_per_click = message.clocks_per_click
                     notated_32nd_notes_per_beat = message.notated_32nd_notes_per_beat
                     num_ticks = 0
-                    eprint('Time signature changed to {}/{}. Clocks per click: {}'.format(message.numerator, message.denominator, message.clocks_per_click))
+                    eprint(f'Time signature changed to {message.numerator}/{message.denominator}. Clocks per click: {message.clocks_per_click}, Notated 32nd Notes per_Beat: {message.notated_32nd_notes_per_beat}')
                 elif message.type == 'key_signature':
-                    eprint('Key signature changed to {}'.format(message.key))
+                    eprint(f'Key signature changed to {message.key}')
 
     def __del__(self): # See:https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/
         self.fs.delete()
