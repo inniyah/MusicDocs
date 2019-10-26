@@ -64,6 +64,8 @@ class MelodyPic:
         self.notes_active = [ 0 ] * 128
         self.pitch_classes_active = [ 0 ] * 12
 
+        self.chord = 0
+
     def draw_circle_of_fifths(self):
         self.ctx.save()
 
@@ -240,6 +242,8 @@ class MelodyPic:
             if self.pitch_classes_active[num_note] > 0:
                 pitch_classes |= value
 
+        pitch_classes = self.chord
+
         for chords_list in self.CHORDS_INFO:
             for n in range(12):
                 for chord_signatures, chord_intervals, chord_name in chords_list:
@@ -411,7 +415,6 @@ class MelodyPic:
         self.draw_chords()
         self.draw_pitch_classes()
 
-
     def press(self, num_key, channel, action=True, drums=False):
         if not drums:
             if action:
@@ -420,6 +423,9 @@ class MelodyPic:
             else:
                 self.notes_active[num_key] &= ~(1<<channel)
                 self.pitch_classes_active[num_key % 12] -= 1
+
+    def set_chord(self, chord=0):
+        self.chord = chord
 
     def change_root(self, num_key):
         self.root_note = (num_key % 12)

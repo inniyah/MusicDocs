@@ -5,8 +5,6 @@ import rtmidi
 import mido
 import time
 import sys
-import collections
-import bisect
 
 from threading import Thread, Lock
 
@@ -133,10 +131,11 @@ class MidiFileSoundPlayer():
         count_ticks_in_measure = 0
         num_bar = 1
         num_beat = 1
+        current_beat_tick = 0
         pitch_classes_in_beat = 0
 
         # See: https://www.geeksforgeeks.org/python-find-the-closest-key-in-dictionary/
-        self.chords = collections.OrderedDict() 
+        self.chords_per_beat = {}
 
         scale_key = 0 # C
         scale_type = 0 # Major
@@ -150,10 +149,12 @@ class MidiFileSoundPlayer():
 
             if isinstance(message, mido.Message):
                 if message.type == 'note_on':
-                    pitch_histogram[message.note % 12] += 1
-                    pitch_classes_in_beat |= 1 << (message.note % 12)
+                    if message.channel != 9: # Exclude percussion 
+                        pitch_histogram[message.note % 12] += 1
+                        pitch_classes_in_beat |= 1 << (message.note % 12)
                 elif message.type == 'note_off':
-                    pitch_histogram[message.note % 12] -= 1
+                    if message.channel != 9: # Exclude percussion 
+                        pitch_histogram[message.note % 12] -= 1
                 elif message.type == 'program_change':
                     self.instruments.add(message.program)
 
@@ -177,7 +178,8 @@ class MidiFileSoundPlayer():
             while count_ticks_in_beat >= total_ticks_in_beat:
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
-                self.chords[count_ticks_in_total] = pitch_classes_in_beat
+                self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
+                current_beat_tick = count_ticks_in_total
                 #eprint(f"beat@{count_ticks_in_total}: {num_beat} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
                 pitch_classes_in_beat = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
 
@@ -261,9 +263,9 @@ class MidiFileSoundPlayer():
             while count_ticks_in_beat >= total_ticks_in_beat:
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
-                tick_num = bisect.bisect_left(list(self.chords.keys()), count_ticks_in_total) 
-                pitch_classes_in_beat = self.chords[count_ticks_in_total] 
+                pitch_classes_in_beat = self.chords_per_beat[count_ticks_in_total] 
                 eprint(f"beat@{count_ticks_in_total}: {num_beat} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
+                keyboard_handler.set_chord(pitch_classes_in_beat)
 
             while count_ticks_in_measure >= total_ticks_in_measure:
                 num_bar += 1
@@ -324,7 +326,7 @@ class RtMidiSoundPlayer():
         self.sfid = self.fs.sfload("/usr/share/sounds/sf2/FluidR3_GM.sf2")
         #self.sfid = self.fs.sfload("OmegaGMGS2.sf2")
         #self.sfid = self.fs.sfload("GeneralUser GS 1.471/GeneralUser GS v1.471.sf2")
-        #self.sfid = self.fs.sfload("Compifont_13082016.sf2")
+        #self.sfid = self.fs.sfload("fonts/Compifont_13082016.sf2")
         self.fs.program_select(0, self.sfid, 0, 0)
 
         self.midi_in = rtmidi.MidiIn()
