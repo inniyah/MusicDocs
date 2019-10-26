@@ -124,7 +124,6 @@ class MidiFileSoundPlayer():
         time_signature_numerator = 4
         time_signature_denominator = 4
         clocks_per_click = 24
-        notated_32nd_notes_per_beat = 8
 
         count_ticks_in_total = 0
         count_ticks_in_beat = 0
@@ -144,7 +143,7 @@ class MidiFileSoundPlayer():
         self.instruments = set()
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
             total_ticks_in_beat = ticks_per_beat * 4 / time_signature_denominator
-            total_ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            total_ticks_in_measure = ticks_per_beat * time_signature_numerator * 4 / time_signature_denominator
             time_of_measure = mido.midifiles.units.tick2second(total_ticks_in_measure, self.midi_file.ticks_per_beat, tempo)
 
             if isinstance(message, mido.Message):
@@ -169,7 +168,6 @@ class MidiFileSoundPlayer():
                     time_signature_numerator = message.numerator
                     time_signature_denominator = message.denominator
                     clocks_per_click = message.clocks_per_click
-                    notated_32nd_notes_per_beat = message.notated_32nd_notes_per_beat
                     num_ticks = 0
                 elif message.type == 'key_signature':
                     #music_key = message.key
@@ -229,6 +227,7 @@ class MidiFileSoundPlayer():
 
         # Number of 32nd notes per beat. This byte is usually 8 as there is usually one quarter note per beat
         # and one quarter note contains eight 32nd notes.
+        # It seems to be useless and unused in practice: https://www.midi.org/forum/473-smf-time-signature-confusion
         notated_32nd_notes_per_beat = 8
 
         count_ticks_in_total = 0
@@ -239,7 +238,7 @@ class MidiFileSoundPlayer():
 
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
             total_ticks_in_beat = ticks_per_beat * 4 / time_signature_denominator
-            total_ticks_in_measure = ticks_per_beat * time_signature_numerator * notated_32nd_notes_per_beat / time_signature_denominator / 2
+            total_ticks_in_measure = ticks_per_beat * time_signature_numerator * 4 / time_signature_denominator
 
             if message.time > 0:
                 time_delta = mido.midifiles.units.tick2second(message.time, self.midi_file.ticks_per_beat, tempo)
