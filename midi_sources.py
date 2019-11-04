@@ -17,7 +17,7 @@ def eprint(*args, **kwargs):
 # Basic primacy of the diatonic scale: all diatonic steps have higher values than chromatic ones
 # All the diatonic degrees have a value of at least 3.5
 # All the chromatic degrees have a value of 2.0, with the exception of vii
-MUSIC_KEY_PROFILE_MAYOR = [ 5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0 ] # Major scale
+MUSIC_KEY_PROFILE_MAJOR = [ 5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0 ] # Major scale
 MUSIC_KEY_PROFILE_MINOR = [ 5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0 ] # Harmonic minor scale
 
 class FifoList():
@@ -99,7 +99,7 @@ class RandomSoundPlayer():
         #if self.keyboard_handler: self.keyboard_handler.show(False)
 
 def guess_scale(music_key, scale_type, pitch_histogram):
-    major_values = [sum([MUSIC_KEY_PROFILE_MAYOR[i] if pitch_histogram[(key + i)%12] > 0 else 0. for i in range(12)]) for key in range(12)]
+    major_values = [sum([MUSIC_KEY_PROFILE_MAJOR[i] if pitch_histogram[(key + i)%12] > 0 else 0. for i in range(12)]) for key in range(12)]
     minor_values = [sum([MUSIC_KEY_PROFILE_MINOR[i] if pitch_histogram[(key + i)%12] > 0 else 0. for i in range(12)]) for key in range(12)]
     eprint(f"{pitch_histogram} -> {major_values} {minor_values}")
 
@@ -187,6 +187,7 @@ class MidiFileSoundPlayer():
                 num_bar += 1
                 count_ticks_in_measure -= total_ticks_in_measure
 
+        self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
         eprint(f"end: {pitch_histogram}")
         eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
 
@@ -264,7 +265,8 @@ class MidiFileSoundPlayer():
                 count_ticks_in_beat -= total_ticks_in_beat
                 pitch_classes_in_beat = self.chords_per_beat[count_ticks_in_total] 
                 eprint(f"beat@{count_ticks_in_total}: {num_beat} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
-                keyboard_handler.set_chord(pitch_classes_in_beat)
+                for keyboard_handler in self.keyboard_handlers:
+                    keyboard_handler.set_chord(pitch_classes_in_beat)
 
             while count_ticks_in_measure >= total_ticks_in_measure:
                 num_bar += 1
@@ -364,10 +366,11 @@ class RtMidiSoundPlayer():
             if pressed: # A note was hit
                 if self.keyboard_handlers:
                     for keyboard_handler in self.keyboard_handlers:
-                        keyboard_handler.press(midi_msg[1], 16, True)
-                        #keyboard_handler.change_root(midi_msg[1])
+                        #keyboard_handler.press(midi_msg[1], 16, True)
+                        keyboard_handler.change_root(midi_msg[1])
 
             else: # A note was released
                 if self.keyboard_handlers:
                     for keyboard_handler in self.keyboard_handlers:
-                        keyboard_handler.press(midi_msg[1], 16, False)
+                        #keyboard_handler.press(midi_msg[1], 16, False)
+                        pass
