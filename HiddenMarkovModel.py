@@ -6,10 +6,23 @@
 
 import numpy as np
 
+# Hidden Markov Model (θ) has with following parameters :
+# 
+# S = Set of M Hidden States
+# A = Transaction Probability Matrix (aij)
+# V = Sequence of T observations (vt)
+# B = Emission Probability Matrix (Also known as Observation Likelihood) (bjk)
+# π = Initial Probability Distribution
+
+# Evaluation Problem: Given the model (θ), we want to determine the probability that
+# a particular sequence of visible states/symbol (V) that was generated from the model (θ).
+
 def forward(V, a, b, initial_distribution):
+    # αj(0) = πj·bjk
     alpha = np.zeros((V.shape[0], a.shape[0]))
     alpha[0, :] = initial_distribution * b[:, V[0]]
 
+    # αj(t+1) = bjkv(t+1)·∑i=1..M, aij·αi(t)
     for t in range(1, V.shape[0]):
         for j in range(a.shape[0]):
             # Matrix Computation Steps
@@ -19,12 +32,17 @@ def forward(V, a, b, initial_distribution):
 
     return alpha
 
+# Backward Algorithm is the time-reversed version of the Forward Algorithm. In Backward Algorithm
+# we need to find the probability that the machine will be in hidden state si at time step t
+# and will generate the remaining part of the sequence of the visible symbol V.
 
 def backward(V, a, b):
     beta = np.zeros((V.shape[0], a.shape[0]))
 
     # setting beta(T) = 1
     beta[V.shape[0] - 1] = np.ones((a.shape[0]))
+
+    # βi(t) = ∑j=0..M, βj(t+1)·bjkv(t+1)·aij
 
     # Loop in backward way from T-1 to
     # Due to python indexing the actual loop will be T-2 to 0
@@ -34,6 +52,10 @@ def backward(V, a, b):
 
     return beta
 
+
+# Learning Problem: Once the high-level structure (Number of Hidden & Visible States) of
+# the model is defined, we want to estimate the Transition (a) & Emission (b) Probabilities
+# using the training sequences. 
 
 def baum_welch(V, a, b, initial_distribution, n_iter=100):
     M = a.shape[0]
@@ -66,6 +88,9 @@ def baum_welch(V, a, b, initial_distribution, n_iter=100):
     return (a, b)
 
 
+# Decoding Problem: Once we have the estimates for Transition (a) & Emission (b) Probabilities,
+# we can then use the model (θ) to predict the Hidden States W which generated the Visible Sequence V
+
 def viterbi(V, a, b, initial_distribution):
     T = V.shape[0]
     M = a.shape[0]
@@ -74,6 +99,8 @@ def viterbi(V, a, b, initial_distribution):
     omega[0, :] = np.log(initial_distribution * b[:, V[0]])
 
     prev = np.zeros((T - 1, M))
+
+    # ωi(t+1) = max(i, ωi(t)·aij·bjkv(t+1))
 
     for t in range(1, T):
         for j in range(M):
@@ -103,15 +130,7 @@ def viterbi(V, a, b, initial_distribution):
     # Flip the path array since we were backtracking
     S = np.flip(S, axis=0)
 
-    # Convert numeric values to actual hidden states
-    result = []
-    for s in S:
-        if s == 0:
-            result.append("A")
-        else:
-            result.append("B")
-
-    return result
+    return S
 
 
 def test_forward(V):
@@ -168,11 +187,11 @@ def test_viterbi(V):
 
     a, b = baum_welch(V, a, b, initial_distribution, n_iter=100)
 
-    print(viterbi(V, a, b, initial_distribution))
+    print([['A', 'B'][int(s)] for s in viterbi(V, a, b, initial_distribution)])
 
 
 def main():
-    S = np.array(['B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B',
+    W = np.array(['B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B',
                   'B', 'B', 'B', 'B', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'B', 'B', 'B', 'B',
                   'B', 'B', 'B', 'B', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'B', 'B', 'B',
                   'B', 'B', 'B', 'B', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'B', 'B', 'A', 'A', 'A', 'A', 'A',
