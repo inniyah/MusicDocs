@@ -60,6 +60,8 @@ class MelodyPic:
         self.change_root(0)
 
         self.fifths_vpos_offset = 5
+        self.pitch_class_lower_limit = -13
+        self.pitch_class_upper_limit = 19
 
         self.notes_active = [ 0 ] * 128
         self.pitch_classes_active = [ 0 ] * 12
@@ -222,39 +224,44 @@ class MelodyPic:
             #print(f"{inc_note}, {inc_x}, {inc_y}: {note_value} -> {self.notes_in_scale[note_value]}")
         return notes_in_scale
 
+    def get_chord_color(self, chord_root, chord_intervals):
+        axis_lr = (sum(chord_intervals) / len(chord_intervals) - 11./3) / 13.5
+
+        vdif = [(((c * 7) % 12) - c / 7.) * 7. / 24. for c in chord_intervals]
+        axis_ud = sum(vdif) / len(vdif) * 3. / 5.
+
+        nmaj = [(1./(n+1) if (j - i) == 4 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
+        nmin = [(1./(n+1) if (j - i) == 3 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
+        axis_mm = 5. * (sum(nmaj) - sum(nmin) ) / len(chord_intervals)
+
+        chord_color = lab_to_rgb(75., (3 * axis_mm + axis_ud) * -20., axis_lr * 80.)
+        return chord_color
+
     def draw_chords(self):
         self.ctx.save()
 
-        #print("{}".format(self.chords_found))
-        for n in range(-13, 19):
-            if (self.get_vpos_from_pitch_class(n) % 24) < 12:
-                note = (self.root_note + n) % 12
+        for rel_note in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
+            if (self.get_vpos_from_pitch_class(rel_note) % 24) < 12:
+                abs_pitch_class = (self.root_note + rel_note) % 12
                 for chord_root, chord_name, chord_intervals in self.chords_found:
-                    if note == chord_root % 12:
-                        #print("Found: {} on {} ({})".format(chord_name, self.note_names[chord_root % 12], chord_intervals))
+                    if abs_pitch_class == chord_root % 12:
+                        print("Found: {} on {} ({})".format(chord_name, self.note_names[chord_root % 12], chord_intervals))
                         pitch_classes_in_chord = set()
                         for d in chord_intervals:
-                            if (n + d) >= -13 and (n + d) < 19 and (self.get_vpos_from_pitch_class(n + d) % 24) < 12:
-                                pitch_classes_in_chord.add(n + d)
-                            if (n + d - 12) >= -13 and (n + d - 12) < 19 and (self.get_vpos_from_pitch_class(n + d - 12) % 24) < 12:
-                                pitch_classes_in_chord.add(n + d - 12)
+                            n = rel_note + d
+                            if n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 12:
+                                pitch_classes_in_chord.add(n)
+                            if (n - 12) >= self.pitch_class_lower_limit and (n - 12) < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n - 12) % 24) < 12:
+                                pitch_classes_in_chord.add(n - 12)
 
                         if len(pitch_classes_in_chord) == len(chord_intervals):
-                            axis_lr = (sum(pitch_classes_in_chord) / len(pitch_classes_in_chord) - 11./3) / 13.5
+                            #print(pitch_classes_in_chord)
 
-                            vdif = [(((c * 7 + self.fifths_vpos_offset) % 12) - self.fifths_vpos_offset - c / 7.) * 7. / 24. for c in pitch_classes_in_chord]
-                            axis_ud = sum(vdif) / len(vdif) * 3. / 5.
-
-                            nmaj = [(1./(n+1) if (j - i) == 4 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
-                            nmin = [(1./(n+1) if (j - i) == 3 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
-                            axis_mm = 5. * (sum(nmaj) - sum(nmin) ) / len(chord_intervals)
-
-                            chord_color = lab_to_rgb(75., (3 * axis_mm + axis_ud) * -20., axis_lr * 80.)
-
+                            chord_color = self.get_chord_color(chord_root, chord_intervals)
                             self.ctx.set_source_rgb(*chord_color)
                             self.ctx.set_line_width(50.0)
                             self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
-                            #print(pitch_classes_in_chord)
+
                             n1 = None
                             for n2 in sorted(pitch_classes_in_chord):
                                 if not n1 is None:
@@ -272,9 +279,9 @@ class MelodyPic:
         return hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
 
     def draw_pitch_line(self, n1, n2):
-        x1 = self.width + self.hstep * (n1 - 19)
+        x1 = self.width + self.hstep * (n1 - self.pitch_class_upper_limit)
         y1 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n1) % 12) * self.vstep
-        x2 = self.width + self.hstep * (n2 - 19)
+        x2 = self.width + self.hstep * (n2 - self.pitch_class_upper_limit)
         y2 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n2) % 12) * self.vstep
 
         #self.ctx.save()
@@ -289,7 +296,7 @@ class MelodyPic:
         if (self.get_vpos_from_pitch_class(n) % 24) >= 12:
             return
 
-        x = self.width + self.hstep * (n - 19)
+        x = self.width + self.hstep * (n - self.pitch_class_upper_limit)
         y = self.height - self.hstep - (self.get_vpos_from_pitch_class(n) % 12) * self.vstep
 
         R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
@@ -338,13 +345,13 @@ class MelodyPic:
 
     def draw_pitch_classes(self):
         # Pitch classes
-        for n in range(-13, 19):
+        for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
             c = 0
             for d in [3, 4, 7]:
                 if d == 7 and c >= 0:
                     continue
                 n2 = n - d
-                if n2 >= -13 and (self.get_vpos_from_pitch_class(n) % 24) < 12 and (self.get_vpos_from_pitch_class(n2) % 24) < 12:
+                if n2 >= self.pitch_class_lower_limit and (self.get_vpos_from_pitch_class(n) % 24) < 12 and (self.get_vpos_from_pitch_class(n2) % 24) < 12:
                     c += 1
                     if self.notes_in_scale[n % 12] and self.notes_in_scale[n2 % 12]:
                         self.ctx.set_source_rgb(0.4, 0.4, 0.4)
@@ -360,7 +367,7 @@ class MelodyPic:
                     self.draw_pitch_line(n, n2)
 
         # Pitch classes
-        for n in range(-13, 19):
+        for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
             self.draw_pitch_class(n)
 
     def draw_circle_of_fifths(self):
@@ -467,19 +474,6 @@ class MelodyPic:
                 self.notes_active[num_key] &= ~(1<<channel)
                 self.pitch_classes_active[num_key % 12] -= 1
 
-    def get_chord_color(self, chord_root, chord_intervals):
-        axis_lr = (sum(pitch_classes_in_chord) / len(pitch_classes_in_chord) - 11./3) / 13.5
-
-        vdif = [(((c * 7 + self.fifths_vpos_offset) % 12) - self.fifths_vpos_offset - c / 7.) * 7. / 24. for c in pitch_classes_in_chord]
-        axis_ud = sum(vdif) / len(vdif) * 3. / 5.
-
-        nmaj = [(1./(n+1) if (j - i) == 4 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
-        nmin = [(1./(n+1) if (j - i) == 3 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
-        axis_mm = 5. * (sum(nmaj) - sum(nmin) ) / len(chord_intervals)
-
-        chord_color = lab_to_rgb(75., (3 * axis_mm + axis_ud) * -20., axis_lr * 80.)
-        return chord_color
-
     def find_chords(self):
         chords_found = []
 
@@ -507,6 +501,7 @@ class MelodyPic:
     def set_chord(self, chord=0):
         self.chord_pitch_classes = chord
         self.chords_found = self.find_chords()
+        print("{}".format(self.chords_found))
 
     def change_root(self, num_key):
         self.root_note = (num_key % 12)
