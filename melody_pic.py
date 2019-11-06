@@ -440,12 +440,12 @@ class MelodyPic:
         for n in range(12):
             r = nr
 
-            is_pressed = (self.pitch_classes_active[(self.root_note + n) % 12] != 0)
+            is_pressed = (self.pitch_classes_active[n % 12] != 0)
 
             if self.notes_in_scale[n % 12]:
-                color = self.get_color_from_note((self.root_note + n) % 12, 1.)
+                color = self.get_color_from_note(n % 12, 1.)
             else:
-                color = self.get_color_from_note((self.root_note + n) % 12, .1)
+                color = self.get_color_from_note(n % 12, .1)
 
             self.ctx.set_source_rgb(*color)
             self.ctx.arc(nx[n], ny[n], r, 0, 2. * math.pi)
@@ -467,8 +467,7 @@ class MelodyPic:
                 self.ctx.set_line_width(1.0)
                 self.ctx.stroke()
 
-            label = self.note_names[n % 12]
-            #label = self.note_names[n % 12]
+            label = PIANO_NOTE_NAMES[n % 12]
             self.ctx.set_source_rgb(0.1, 0.1, 0.1)
             self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
             self.ctx.set_font_size(12)
