@@ -66,18 +66,6 @@ class MelodyPic:
 
         self.chord = 0
 
-    def draw_circle_of_fifths(self):
-        self.ctx.save()
-
-        self.ctx.set_source_rgb(1, 0, 0)
-        self.ctx.set_line_width(0.06)
-        self.ctx.arc(0, 0, self.D * .4, 0, 2. * math.pi)
-
-        self.ctx.set_line_width(0.04)
-        self.ctx.stroke()
-
-        self.ctx.restore()
-
     def get_vpos_from_note(self, note):
         return note * 7 + self.fifths_vpos_offset
 
@@ -399,6 +387,59 @@ class MelodyPic:
         for n in range(-13, 19):
             self.draw_pitch_class(n)
 
+    def draw_circle_of_fifths(self):
+        self.ctx.save()
+
+        cx = self.width - 32 * self.hstep / 2
+        cy = (self.height - 2 * self.hstep - 11 * self.vstep) / 2
+
+        nr  = 15.
+        cr = min(self.width - cx, cy) - 2 * nr
+
+        nx = [cx + cr * math.sin(2. * math.pi * ((n * 7) % 12) / 12.) for n in range(12)]
+        ny = [cy - cr * math.cos(2. * math.pi * ((n * 7) % 12) / 12.) for n in range(12)]
+
+        for n in range(12):
+            r = nr
+
+            is_pressed = (self.pitch_classes_active[(self.root_note + n) % 12] != 0)
+
+            if self.notes_in_scale[n % 12]:
+                color = self.get_color_from_note((self.root_note + n) % 12, 1.)
+            else:
+                color = self.get_color_from_note((self.root_note + n) % 12, .1)
+
+            self.ctx.set_source_rgb(*color)
+            self.ctx.arc(nx[n], ny[n], r, 0, 2. * math.pi)
+            self.ctx.fill()
+
+            if is_pressed:
+                self.ctx.set_line_width(6.0)
+            else:
+                self.ctx.set_line_width(2.0)
+
+            #self.ctx.move_to(x + r, y)
+            self.ctx.set_source_rgb(0, 0, 0)
+            self.ctx.arc(nx[n], ny[n], r, 0, 2. * math.pi)
+            self.ctx.stroke()
+
+            if (n % 12 == self.root_note):
+                self.ctx.set_source_rgb(0., 0., 0.)
+                self.ctx.arc(nx[n], ny[n], r + 8., 0, 2. * math.pi)
+                self.ctx.set_line_width(1.0)
+                self.ctx.stroke()
+
+            label = self.note_names[n % 12]
+            #label = self.note_names[n % 12]
+            self.ctx.set_source_rgb(0.1, 0.1, 0.1)
+            self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+            self.ctx.set_font_size(12)
+            text_extents = self.ctx.text_extents(str(label))
+            self.ctx.move_to(nx[n] - text_extents.width/2., ny[n] + text_extents.height/2.)
+            self.ctx.show_text(str(label))
+
+        self.ctx.restore()
+
     def draw_pic(self, ctx):
         self.ctx = ctx
 
@@ -414,6 +455,8 @@ class MelodyPic:
 
         self.draw_chords()
         self.draw_pitch_classes()
+
+        self.draw_circle_of_fifths()
 
     def press(self, num_key, channel, action=True, drums=False):
         if not drums:
