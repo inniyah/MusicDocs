@@ -166,7 +166,7 @@ def main():
     print(f"Minor: {MUSIC_KEY_PROFILE_MINOR} -> {MUSIC_KEY_FREQUENCIES_MINOR} (K = {MUSIC_KEY_K_MINOR})")
     for pitch_histogram in TEST_PITCH_HISTOGRAMS:
         h = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
-        print(f"{pitch_histogram} ~ {h:#06x}")
+        print(f"{pitch_histogram} ~ {h:#06x} -> {bin(h).count('1')} pitch classes")
 
         ks_major_values = [
             sum([
