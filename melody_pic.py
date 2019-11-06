@@ -412,15 +412,20 @@ class MelodyPic:
             for n_inc in [3, 4]:
                 n2 = (n1 + n_inc) % 12
                 notes_in_scale = (self.notes_in_scale[n1] and self.notes_in_scale[n2])
-                notes_pressed = (self.pitch_classes_active[n1] > 0 and self.pitch_classes_active[n2] > 0)
-                if notes_in_scale or notes_pressed:
+                if notes_in_scale:
                     self.ctx.set_source_rgb(0.5, 0.5, 0.5)
                     self.ctx.set_line_width(2.0)
+                    self.ctx.move_to(nx[n1], ny[n1])
+                    self.ctx.line_to(nx[n2], ny[n2])
+                    self.ctx.stroke()
 
-                    if notes_pressed:
-                        self.ctx.set_source_rgb(0.3, 0.3, 0.3)
-                        self.ctx.set_line_width(6.0)
-
+        for n1 in range(12):
+            for n_inc in [3, 4]:
+                n2 = (n1 + n_inc) % 12
+                notes_pressed = (self.pitch_classes_active[n1] > 0 and self.pitch_classes_active[n2] > 0)
+                if notes_pressed:
+                    self.ctx.set_source_rgb(0.3, 0.3, 0.3)
+                    self.ctx.set_line_width(6.0)
                     self.ctx.move_to(nx[n1], ny[n1])
                     self.ctx.line_to(nx[n2], ny[n2])
                     self.ctx.stroke()
