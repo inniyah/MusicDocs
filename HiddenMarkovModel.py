@@ -102,6 +102,8 @@ def viterbi(V, a, b, initial_distribution):
 
     # ωi(t+1) = max(i, ωi(t)·aij·bjkv(t+1))
 
+    # One implementation trick is to use the log scale so that we dont get the underflow error.
+
     for t in range(1, T):
         for j in range(M):
             # Same as Forward Probability
