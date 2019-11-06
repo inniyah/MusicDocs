@@ -245,6 +245,19 @@ class MelodyPic:
 
         return chords_found
 
+    def get_chord_color(self, chord_root, chord_intervals):
+        axis_lr = (sum(pitch_classes_in_chord) / len(pitch_classes_in_chord) - 11./3) / 13.5
+
+        vdif = [(((c * 7 + self.fifths_vpos_offset) % 12) - self.fifths_vpos_offset - c / 7.) * 7. / 24. for c in pitch_classes_in_chord]
+        axis_ud = sum(vdif) / len(vdif) * 3. / 5.
+
+        nmaj = [(1./(n+1) if (j - i) == 4 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
+        nmin = [(1./(n+1) if (j - i) == 3 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
+        axis_mm = 5. * (sum(nmaj) - sum(nmin) ) / len(chord_intervals)
+
+        chord_color = lab_to_rgb(75., (3 * axis_mm + axis_ud) * -20., axis_lr * 80.)
+        return chord_color
+
     def draw_chords(self):
         chords_found = self.find_chords()
         self.ctx.save()
@@ -398,6 +411,31 @@ class MelodyPic:
 
         nx = [cx + cr * math.sin(2. * math.pi * ((n * 7) % 12) / 12.) for n in range(12)]
         ny = [cy - cr * math.cos(2. * math.pi * ((n * 7) % 12) / 12.) for n in range(12)]
+
+        for n1 in range(12):
+            for n_inc in [3, 4, 5, 7]:
+                n2 = (n1 + n_inc) % 12
+                self.ctx.set_source_rgb(0.9, 0.9, 0.9)
+                self.ctx.set_line_width(1.0)
+                self.ctx.move_to(nx[n1], ny[n1])
+                self.ctx.line_to(nx[n2], ny[n2])
+                self.ctx.stroke()
+
+        for n1 in range(12):
+            for n_inc in [3, 4]:
+                n2 = (n1 + n_inc) % 12
+                if self.notes_in_scale[n1] and self.notes_in_scale[n2]:
+                    self.ctx.set_source_rgb(0.5, 0.5, 0.5)
+                    self.ctx.set_line_width(2.0)
+
+                    if self.pitch_classes_active[n1] > 0 and self.pitch_classes_active[n2] > 0:
+                        self.ctx.set_source_rgb(0.2, 0.2, 0.2)
+                        self.ctx.set_line_width(6.0)
+
+                    self.ctx.move_to(nx[n1], ny[n1])
+                    self.ctx.line_to(nx[n2], ny[n2])
+                    self.ctx.stroke()
+
 
         for n in range(12):
             r = nr
