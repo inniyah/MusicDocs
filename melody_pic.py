@@ -237,6 +237,9 @@ class MelodyPic:
         chord_color = lab_to_rgb(75., (3 * axis_mm + axis_ud) * -20., axis_lr * 80.)
         return chord_color
 
+    def get_vpos_from_pitch_class(self, note):
+        return note * 7 + self.fifths_vpos_offset
+
     def draw_chords(self):
         self.ctx.save()
 
@@ -246,17 +249,17 @@ class MelodyPic:
                 for chord_root, chord_name, chord_intervals in self.chords_found:
                     if abs_pitch_class == chord_root % 12:
                         print("Found: {} on {} ({})".format(chord_name, self.note_names[chord_root % 12], chord_intervals))
+
                         pitch_classes_in_chord = set()
                         for d in chord_intervals:
-                            n = rel_note + d
-                            if n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 12:
-                                pitch_classes_in_chord.add(n)
-                            if (n - 12) >= self.pitch_class_lower_limit and (n - 12) < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n - 12) % 24) < 12:
-                                pitch_classes_in_chord.add(n - 12)
+                            for i in [-12, 0, 12]:
+                                n = rel_note + d + i
+                                if n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 12:
+                                    pitch_classes_in_chord.add(n)
 
-                        if len(pitch_classes_in_chord) == len(chord_intervals):
-                            #print(pitch_classes_in_chord)
+                        print(sorted(pitch_classes_in_chord))
 
+                        if len(pitch_classes_in_chord) >= len(chord_intervals):
                             chord_color = self.get_chord_color(chord_root, chord_intervals)
                             self.ctx.set_source_rgb(*chord_color)
                             self.ctx.set_line_width(50.0)
@@ -269,9 +272,6 @@ class MelodyPic:
                                 n1 = n2
 
         self.ctx.restore()
-
-    def get_vpos_from_pitch_class(self, note):
-        return note * 7 + self.fifths_vpos_offset
 
     def get_color_from_pitch(self, note, saturation=1., value=1.):
         if note == -1:
