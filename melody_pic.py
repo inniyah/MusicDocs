@@ -64,7 +64,8 @@ class MelodyPic:
         self.notes_active = [ 0 ] * 128
         self.pitch_classes_active = [ 0 ] * 12
 
-        self.chord = 0
+        self.chord_pitch_classes = 0
+        self.chords_found = []
 
     def get_vpos_from_note(self, note):
         return note * 7 + self.fifths_vpos_offset
@@ -221,52 +222,14 @@ class MelodyPic:
             #print(f"{inc_note}, {inc_x}, {inc_y}: {note_value} -> {self.notes_in_scale[note_value]}")
         return notes_in_scale
 
-    def find_chords(self):
-        chords_found = []
-
-        pitch_classes = 0
-        for num_note in range(0, 12):
-            value = 1 << (num_note % 12)
-            if self.pitch_classes_active[num_note] > 0:
-                pitch_classes |= value
-
-        pitch_classes = self.chord
-
-        for chords_list in self.CHORDS_INFO:
-            for n in range(12):
-                for chord_signatures, chord_intervals, chord_name in chords_list:
-                    note = (self.root_note + n * 7) % 12
-                    chord_signature = chord_signatures[note]
-                    if (pitch_classes & chord_signature) == chord_signature:
-                        chords_found.append((note % 12, chord_name, chord_intervals))
-                        #print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, self.note_names[note % 12],
-                        #    pitch_classes, chord_signature, pitch_classes & ~chord_signature))
-                        pitch_classes &= ~chord_signature
-
-        return chords_found
-
-    def get_chord_color(self, chord_root, chord_intervals):
-        axis_lr = (sum(pitch_classes_in_chord) / len(pitch_classes_in_chord) - 11./3) / 13.5
-
-        vdif = [(((c * 7 + self.fifths_vpos_offset) % 12) - self.fifths_vpos_offset - c / 7.) * 7. / 24. for c in pitch_classes_in_chord]
-        axis_ud = sum(vdif) / len(vdif) * 3. / 5.
-
-        nmaj = [(1./(n+1) if (j - i) == 4 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
-        nmin = [(1./(n+1) if (j - i) == 3 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
-        axis_mm = 5. * (sum(nmaj) - sum(nmin) ) / len(chord_intervals)
-
-        chord_color = lab_to_rgb(75., (3 * axis_mm + axis_ud) * -20., axis_lr * 80.)
-        return chord_color
-
     def draw_chords(self):
-        chords_found = self.find_chords()
         self.ctx.save()
 
-        #print("{}".format(chords_found))
+        #print("{}".format(self.chords_found))
         for n in range(-13, 19):
             if (self.get_vpos_from_pitch_class(n) % 24) < 12:
                 note = (self.root_note + n) % 12
-                for chord_root, chord_name, chord_intervals in chords_found:
+                for chord_root, chord_name, chord_intervals in self.chords_found:
                     if note == chord_root % 12:
                         #print("Found: {} on {} ({})".format(chord_name, self.note_names[chord_root % 12], chord_intervals))
                         pitch_classes_in_chord = set()
@@ -504,8 +467,46 @@ class MelodyPic:
                 self.notes_active[num_key] &= ~(1<<channel)
                 self.pitch_classes_active[num_key % 12] -= 1
 
+    def get_chord_color(self, chord_root, chord_intervals):
+        axis_lr = (sum(pitch_classes_in_chord) / len(pitch_classes_in_chord) - 11./3) / 13.5
+
+        vdif = [(((c * 7 + self.fifths_vpos_offset) % 12) - self.fifths_vpos_offset - c / 7.) * 7. / 24. for c in pitch_classes_in_chord]
+        axis_ud = sum(vdif) / len(vdif) * 3. / 5.
+
+        nmaj = [(1./(n+1) if (j - i) == 4 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
+        nmin = [(1./(n+1) if (j - i) == 3 else 0.) for n, (i, j) in enumerate(zip(chord_intervals[:-1], chord_intervals[1:]))]
+        axis_mm = 5. * (sum(nmaj) - sum(nmin) ) / len(chord_intervals)
+
+        chord_color = lab_to_rgb(75., (3 * axis_mm + axis_ud) * -20., axis_lr * 80.)
+        return chord_color
+
+    def find_chords(self):
+        chords_found = []
+
+        pitch_classes = 0
+        for num_note in range(0, 12):
+            value = 1 << (num_note % 12)
+            if self.pitch_classes_active[num_note] > 0:
+                pitch_classes |= value
+
+        pitch_classes = self.chord_pitch_classes
+
+        for chords_list in self.CHORDS_INFO:
+            for n in range(12):
+                for chord_signatures, chord_intervals, chord_name in chords_list:
+                    note = (self.root_note + n * 7) % 12
+                    chord_signature = chord_signatures[note]
+                    if (pitch_classes & chord_signature) == chord_signature:
+                        chords_found.append((note % 12, chord_name, chord_intervals))
+                        #print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, self.note_names[note % 12],
+                        #    pitch_classes, chord_signature, pitch_classes & ~chord_signature))
+                        pitch_classes &= ~chord_signature
+
+        return chords_found
+
     def set_chord(self, chord=0):
-        self.chord = chord
+        self.chord_pitch_classes = chord
+        self.chords_found = self.find_chords()
 
     def change_root(self, num_key):
         self.root_note = (num_key % 12)
