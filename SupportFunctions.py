@@ -8,6 +8,10 @@ import sys
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+# Hue: angle in degrees (0-360)
+# Saturation: fraction between 0 and 1
+# Value: fraction between 0 and 1
+
 def hsv_to_rgb(hue, saturation=1., value=1.):
     h = float(hue)
     s = float(saturation)
@@ -20,13 +24,32 @@ def hsv_to_rgb(hue, saturation=1., value=1.):
     q = v * (1 - f * s)
     t = v * (1 - (1 - f) * s)
     r, g, b = 0, 0, 0
-    if hi == 0: r, g, b = v, t, p
+    if   hi == 0: r, g, b = v, t, p
     elif hi == 1: r, g, b = q, v, p
     elif hi == 2: r, g, b = p, v, t
     elif hi == 3: r, g, b = p, q, v
     elif hi == 4: r, g, b = t, p, v
     elif hi == 5: r, g, b = v, p, q
     return r, g, b
+
+# Red: fraction between 0 and 1
+# Green: fraction between 0 and 1
+# Blue: fraction between 0 and 1
+
+def rgb_to_hsv(r, g, b):
+    mx = max(r, g, b)
+    mn = min(r, g, b)
+    df = mx - mn
+    if   mx == mn: h = 0
+    elif mx == r:  h = (60 * ((g-b)/df) + 360) % 360
+    elif mx == g:  h = (60 * ((b-r)/df) + 120) % 360
+    elif mx == b:  h = (60 * ((r-g)/df) + 240) % 360
+    if mx == 0:
+        s = 0
+    else:
+        s = (df/mx) * 100
+    v = mx * 100
+    return h, s, v
 
 def lab_to_rgb(l, a, b):
     y = (l + 16.) / 116.
