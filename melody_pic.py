@@ -361,7 +361,7 @@ class MelodyPic:
                         self.ctx.set_line_width(1.0)
 
                     if self.pitch_classes_active[(n + self.root_note) % 12] > 0 and self.pitch_classes_active[(n2 + self.root_note) % 12] > 0:
-                        self.ctx.set_source_rgb(0.4, 0.4, 0.4)
+                        self.ctx.set_source_rgb(0.3, 0.3, 0.3)
                         self.ctx.set_line_width(6.0)
 
                     self.draw_pitch_line(n, n2)
@@ -398,10 +398,13 @@ class MelodyPic:
             self.ctx.set_source_rgb(*chord_color)
             self.ctx.set_line_width(50.0)
             self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+            n1 = chord_root
             for d in chord_intervals:
-                self.ctx.move_to(nx[chord_root], ny[chord_root])
-                self.ctx.line_to(nx[(chord_root + d)%12], ny[(chord_root + d)%12])
+                n2 = (chord_root + d) % 12
+                self.ctx.move_to(nx[n1], ny[n1])
+                self.ctx.line_to(nx[n2], ny[n2])
                 self.ctx.stroke()
+                n1 = n2
         self.ctx.restore()
 
 
@@ -415,7 +418,7 @@ class MelodyPic:
                     self.ctx.set_line_width(2.0)
 
                     if notes_pressed:
-                        self.ctx.set_source_rgb(0.2, 0.2, 0.2)
+                        self.ctx.set_source_rgb(0.3, 0.3, 0.3)
                         self.ctx.set_line_width(6.0)
 
                     self.ctx.move_to(nx[n1], ny[n1])
@@ -441,7 +444,7 @@ class MelodyPic:
                 self.ctx.set_line_width(2.0)
 
             #self.ctx.move_to(x + nr, y)
-            self.ctx.set_source_rgb(0, 0, 0)
+            self.ctx.set_source_rgb(0.3, 0.3, 0.3)
             self.ctx.arc(nx[n], ny[n], nr, 0, 2. * math.pi)
             self.ctx.stroke()
 
@@ -515,7 +518,7 @@ class MelodyPic:
     def set_chord(self, chord=0):
         self.chord_pitch_classes = chord
         self.chords_found = self.find_chords()
-        print("{}".format(self.chords_found))
+        #print("{}".format(self.chords_found))
 
     def change_root(self, num_key):
         self.root_note = (num_key % 12)
