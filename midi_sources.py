@@ -330,6 +330,9 @@ class RtMidiSoundPlayer():
         #self.sfid = self.fs.sfload("fonts/Compifont_13082016.sf2")
         self.fs.program_select(0, self.sfid, 0, 0)
 
+        self.pitch_classes_active = [ 0 ] * 12
+        self.pitch_classes_in_chord = 0
+
         self.midi_in = rtmidi.MidiIn()
         available_ports = self.midi_in.get_ports()
         if available_ports:
@@ -360,17 +363,28 @@ class RtMidiSoundPlayer():
             note = midi_msg[1]
             pitch_class = midi_msg[1] % 12
             octave = midi_msg[1] // 12
+            channel = 16
+
+            if pressed:
+                self.pitch_classes_active[note % 12] += 1
+                self.pitch_classes_in_chord |= 1 << (note % 12)
+            else:
+                self.pitch_classes_active[note % 12] -= 1
+                if self.pitch_classes_active[note % 12] == 0:
+                    self.pitch_classes_in_chord &= ~(1 << (note % 12))
 
             #eprint("%s" % ((pressed, note, octave, pitch_class),))
 
             if pressed: # A note was hit
                 if self.keyboard_handlers:
                     for keyboard_handler in self.keyboard_handlers:
-                        #keyboard_handler.press(midi_msg[1], 16, True)
-                        keyboard_handler.change_root(midi_msg[1])
+                        keyboard_handler.press(midi_msg[1], channel, True)
+                        keyboard_handler.set_chord(self.pitch_classes_in_chord)
+                        #keyboard_handler.change_root(midi_msg[1])
 
             else: # A note was released
                 if self.keyboard_handlers:
                     for keyboard_handler in self.keyboard_handlers:
-                        #keyboard_handler.press(midi_msg[1], 16, False)
-                        pass
+                        keyboard_handler.press(midi_msg[1], channel, False)
+                        keyboard_handler.set_chord(self.pitch_classes_in_chord)
+                        #pass
