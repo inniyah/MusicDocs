@@ -248,7 +248,7 @@ class MelodyPic:
                 abs_pitch_class = (self.root_note + rel_note) % 12
                 for chord_root, chord_name, chord_intervals in self.chords_found:
                     if abs_pitch_class == chord_root % 12:
-                        print("Found: {} on {} ({})".format(chord_name, self.note_names[chord_root % 12], chord_intervals))
+                        #print("Found: {} on {} ({})".format(chord_name, self.note_names[chord_root % 12], chord_intervals))
 
                         pitch_classes_in_chord = set()
                         for d in chord_intervals:
@@ -257,7 +257,7 @@ class MelodyPic:
                                 if n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 12:
                                     pitch_classes_in_chord.add(n)
 
-                        print(sorted(pitch_classes_in_chord))
+                        #print(sorted(pitch_classes_in_chord))
 
                         if len(pitch_classes_in_chord) >= len(chord_intervals):
                             chord_color = self.get_chord_color(chord_root, chord_intervals)
@@ -391,14 +391,30 @@ class MelodyPic:
                 self.ctx.line_to(nx[n2], ny[n2])
                 self.ctx.stroke()
 
+
+        self.ctx.save()
+        for chord_root, chord_name, chord_intervals in self.chords_found:
+            chord_color = self.get_chord_color(chord_root, chord_intervals)
+            self.ctx.set_source_rgb(*chord_color)
+            self.ctx.set_line_width(50.0)
+            self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
+            for d in chord_intervals:
+                self.ctx.move_to(nx[chord_root], ny[chord_root])
+                self.ctx.line_to(nx[(chord_root + d)%12], ny[(chord_root + d)%12])
+                self.ctx.stroke()
+        self.ctx.restore()
+
+
         for n1 in range(12):
             for n_inc in [3, 4]:
                 n2 = (n1 + n_inc) % 12
-                if self.notes_in_scale[n1] and self.notes_in_scale[n2]:
+                notes_in_scale = (self.notes_in_scale[n1] and self.notes_in_scale[n2])
+                notes_pressed = (self.pitch_classes_active[n1] > 0 and self.pitch_classes_active[n2] > 0)
+                if notes_in_scale or notes_pressed:
                     self.ctx.set_source_rgb(0.5, 0.5, 0.5)
                     self.ctx.set_line_width(2.0)
 
-                    if self.pitch_classes_active[n1] > 0 and self.pitch_classes_active[n2] > 0:
+                    if notes_pressed:
                         self.ctx.set_source_rgb(0.2, 0.2, 0.2)
                         self.ctx.set_line_width(6.0)
 
@@ -408,8 +424,6 @@ class MelodyPic:
 
 
         for n in range(12):
-            r = nr
-
             is_pressed = (self.pitch_classes_active[n % 12] != 0)
 
             if self.notes_in_scale[n % 12]:
@@ -418,7 +432,7 @@ class MelodyPic:
                 color = self.get_color_from_note(n % 12, .1)
 
             self.ctx.set_source_rgb(*color)
-            self.ctx.arc(nx[n], ny[n], r, 0, 2. * math.pi)
+            self.ctx.arc(nx[n], ny[n], nr, 0, 2. * math.pi)
             self.ctx.fill()
 
             if is_pressed:
@@ -426,14 +440,14 @@ class MelodyPic:
             else:
                 self.ctx.set_line_width(2.0)
 
-            #self.ctx.move_to(x + r, y)
+            #self.ctx.move_to(x + nr, y)
             self.ctx.set_source_rgb(0, 0, 0)
-            self.ctx.arc(nx[n], ny[n], r, 0, 2. * math.pi)
+            self.ctx.arc(nx[n], ny[n], nr, 0, 2. * math.pi)
             self.ctx.stroke()
 
             if (n % 12 == self.root_note):
                 self.ctx.set_source_rgb(0., 0., 0.)
-                self.ctx.arc(nx[n], ny[n], r + 8., 0, 2. * math.pi)
+                self.ctx.arc(nx[n], ny[n], nr + 8., 0, 2. * math.pi)
                 self.ctx.set_line_width(1.0)
                 self.ctx.stroke()
 
