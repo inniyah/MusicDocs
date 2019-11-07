@@ -85,6 +85,16 @@ def rgb_to_lab(r, g, b):
 
     return [(116. * y) - 16., 500. * (x - y), 200. * (y - z)]
 
+# This works for counting non-zero bits in 64-bit positive numbers
+def count_bits(n):
+    n = (n & 0x5555555555555555) + ((n & 0xAAAAAAAAAAAAAAAA) >> 1)
+    n = (n & 0x3333333333333333) + ((n & 0xCCCCCCCCCCCCCCCC) >> 2)
+    n = (n & 0x0F0F0F0F0F0F0F0F) + ((n & 0xF0F0F0F0F0F0F0F0) >> 4)
+    n = (n & 0x00FF00FF00FF00FF) + ((n & 0xFF00FF00FF00FF00) >> 8)
+    n = (n & 0x0000FFFF0000FFFF) + ((n & 0xFFFF0000FFFF0000) >> 16)
+    n = (n & 0x00000000FFFFFFFF) + ((n & 0xFFFFFFFF00000000) >> 32)
+    return n
+
 # Unoptimized Discrete Fourier transform (DFT). It ncurs a complexity of O(N^2)
 # See: https://jyhmiinlin.github.io/pynufft/misc/dft.html
 def naive_DFT(x):

@@ -10,11 +10,10 @@ NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 
 MUSIC_KEY_PROFILE_MAJOR = [ 5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0 ] # Major scale
 MUSIC_KEY_PROFILE_MINOR = [ 5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0 ] # Harmonic minor scale
 
-MUSIC_KEY_PROFILE_OFFSET_MAJOR = 4.
-MUSIC_KEY_PROFILE_OFFSET_MINOR = 4.
+MUSIC_KEY_PROFILE_OFFSET = 4.
 
-MUSIC_KEY_FREQUENCIES_MAJOR = [math.exp(v - MUSIC_KEY_PROFILE_OFFSET_MAJOR)/(1. + math.exp(v - MUSIC_KEY_PROFILE_OFFSET_MAJOR)) for v in MUSIC_KEY_PROFILE_MAJOR]
-MUSIC_KEY_FREQUENCIES_MINOR = [math.exp(v - MUSIC_KEY_PROFILE_OFFSET_MINOR)/(1. + math.exp(v - MUSIC_KEY_PROFILE_OFFSET_MINOR)) for v in MUSIC_KEY_PROFILE_MINOR]
+MUSIC_KEY_FREQUENCIES_MAJOR = [math.exp(v - MUSIC_KEY_PROFILE_OFFSET)/(1. + math.exp(v - MUSIC_KEY_PROFILE_OFFSET)) for v in MUSIC_KEY_PROFILE_MAJOR]
+MUSIC_KEY_FREQUENCIES_MINOR = [math.exp(v - MUSIC_KEY_PROFILE_OFFSET)/(1. + math.exp(v - MUSIC_KEY_PROFILE_OFFSET)) for v in MUSIC_KEY_PROFILE_MINOR]
 
 MUSIC_KEY_K_MAJOR = sum([math.log(1-f) for f in MUSIC_KEY_FREQUENCIES_MAJOR])
 MUSIC_KEY_K_MINOR = sum([math.log(1-f) for f in MUSIC_KEY_FREQUENCIES_MINOR])
@@ -166,11 +165,12 @@ def main():
     print(f"Minor: {MUSIC_KEY_PROFILE_MINOR} -> {MUSIC_KEY_FREQUENCIES_MINOR} (K = {MUSIC_KEY_K_MINOR})")
     for pitch_histogram in TEST_PITCH_HISTOGRAMS:
         h = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
-        print(f"{pitch_histogram} ~ {h:#06x} -> {bin(h).count('1')} pitch classes")
+        pitch_histogram_k = bin(h).count('1') * MUSIC_KEY_PROFILE_OFFSET
+        print(f"{pitch_histogram} ~ {h:#06x} -> {bin(h).count('1')} pitch classes ~  Kh = {pitch_histogram_k}")
 
         ks_major_values = [
             sum([
-                (MUSIC_KEY_PROFILE_MAJOR[i] - MUSIC_KEY_PROFILE_OFFSET_MAJOR) if pitch_histogram[(key + i)%12] > 0 \
+                (MUSIC_KEY_PROFILE_MAJOR[i]) if pitch_histogram[(key + i)%12] > 0 \
                 else 0. \
                 for i in range(12) \
             ]) for key in range(12)
@@ -178,11 +178,13 @@ def main():
 
         ks_minor_values = [ 
             sum([
-                (MUSIC_KEY_PROFILE_MINOR[i] - MUSIC_KEY_PROFILE_OFFSET_MINOR) if pitch_histogram[(key + i)%12] > 0 \
+                (MUSIC_KEY_PROFILE_MINOR[i]) if pitch_histogram[(key + i)%12] > 0 \
                 else 0. \
                 for i in range(12) \
             ]) for key in range(12)
         ]
+
+        #print(f"{pitch_histogram} -> KSmaj = {ks_major_values}  KSmin = {ks_minor_values}")
 
         major_values = [
             functools.reduce(operator.mul, [
@@ -200,10 +202,12 @@ def main():
             ]) for key in range(12)
         ]
 
-        major_error = max([abs(math.exp(MUSIC_KEY_K_MAJOR + ks_v) - v) for ks_v, v in zip(ks_major_values, major_values)])
+        #print(f"{pitch_histogram} -> Pmaj = {major_values}  Pmin = {minor_values}")
+
+        major_error = max([abs(math.exp(MUSIC_KEY_K_MAJOR + ks_v - pitch_histogram_k) - v) for ks_v, v in zip(ks_major_values, major_values)])
         major_error = major_error if major_error > 1e-16 else 0
 
-        minor_error = max([abs(math.exp(MUSIC_KEY_K_MINOR + ks_v) - v) for ks_v, v in zip(ks_minor_values, minor_values)])
+        minor_error = max([abs(math.exp(MUSIC_KEY_K_MINOR + ks_v - pitch_histogram_k) - v) for ks_v, v in zip(ks_minor_values, minor_values)])
         minor_error = minor_error if minor_error > 1e-16 else 0
 
         if minor_error or major_error:
