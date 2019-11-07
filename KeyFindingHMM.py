@@ -6,6 +6,9 @@ import functools
 import operator
 import numpy as np
 
+NUM_NOTES = 12
+NUM_MODES = 2
+
 NOTE_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 MODE_NAMES = ['Maj', 'min']
 
@@ -188,7 +191,7 @@ class EmissionProbabilities():
         max_o = 2**12
         o = slice(o).indices(max_o)[1]
         pitch_classes = [(o & 1<<(r%12) != 0) for r in range(0, 12)]
-        print(f">>> HiddenStates={h} ; ObservableStates={o} -> {pitch_classes}")
+        #print(f">>> HiddenStates={h} ; ObservableStates={o} -> {pitch_classes}")
 
         if isinstance(h, int):
             note = h % 12
@@ -196,16 +199,21 @@ class EmissionProbabilities():
             raw_probabilities = self.get_probabilities(note, mode)
             probabilities = self.get_probabilities_for_histogram(note, mode, o)
             probability = functools.reduce(operator.mul, probabilities)
-            print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ; Data={probabilities} -> {probability}")
+            p1 = [round(p, 2) if c else math.nan for c, p in zip(pitch_classes, probabilities)]
+            p2 = [round(p, 2) if not c else math.nan for c, p in zip(pitch_classes, probabilities)]
+            print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ~ {o:012b} ; Data={p1}; {p2} -> {probability}")
             return probability
         elif isinstance(h, slice):
-            max_h = 2 * 12
-            v = np.array((0.5, 0.5))
+            max_h = NUM_MODES * NUM_NOTES
+            v = np.array([0.5] * NUM_MODES * NUM_NOTES)
             for i in range(*h.indices(max_h)):
                 note = i % 12
                 mode = i // 12
-                data = self.get_probabilities(note, mode)
-                print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ; Data={data}")
+                probabilities = self.get_probabilities(note, mode)
+                p1 = [round(p, 2) if c else math.nan for c, p in zip(pitch_classes, probabilities)]
+                p2 = [round(p, 2) if not c else math.nan for c, p in zip(pitch_classes, probabilities)]
+                print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ; Data={p1}; {p2}")
+            print(f">>> Value={v}")
             return v
         else:
             raise TypeError("index must be int or slice")
@@ -255,36 +263,30 @@ def viterbi(V, a, b, initial_distribution):
 
 
 def test_viterbi():
-    V = np.array([0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 1, 1, 0, 2, 1, 2, 0, 2, 0, 1, 2, 1, 2, 0, 2,
-                  0, 2, 2, 0, 2, 2, 2, 0, 0, 1, 0, 1, 2, 2, 2, 2, 0, 2, 2, 2, 1, 2, 0, 1, 0, 0, 2, 1, 2, 1, 1, 1, 0, 2, 0, 0, 1,
-                  1, 2, 0, 1, 2, 0, 1, 0, 2, 1, 0, 0, 2, 0, 1, 0, 2, 1, 2, 1, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 1, 1, 1, 2, 2, 1, 2,
-                  2, 1, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 1, 1, 2, 1, 0, 1, 0, 1, 0, 1, 2, 0, 2, 2, 1, 0, 0, 1, 1, 2, 2, 0, 2, 0,
-                  0, 0, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2, 1, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 1, 2, 1, 1, 1, 2, 2,
-                  2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 1, 2, 1, 2, 1, 2, 0, 2, 0, 1, 2, 0, 1, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1,
-                  0, 0, 1, 2, 1, 0, 2, 2, 1, 2, 2, 2, 1, 0, 1, 2, 2, 2, 1, 0, 1, 0, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 2, 0, 2, 0, 1,
-                  1, 2, 0, 0, 2, 2, 2, 1, 1, 0, 0, 1, 2, 1, 2, 1, 0, 2, 0, 2, 2, 0, 0, 0, 1, 0, 1, 1, 1, 2, 2, 0, 1, 2, 2, 2, 0,
-                  1, 1, 2, 2, 0, 1, 2, 2, 2, 2, 2, 2, 0, 1, 2, 2, 0, 2, 0, 2, 2, 2, 1, 2, 2, 2, 1, 1, 1, 1, 2, 0, 0, 0, 2, 2, 1,
-                  1, 2, 1, 0, 2, 1, 1, 1, 0, 1, 2, 1, 2, 1, 2, 2, 2, 0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 1, 0, 1, 1, 1, 2, 1, 2, 2, 2,
-                  2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 0, 1, 2, 0, 1, 2, 1, 2, 0, 2, 1, 0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2, 1,
-                  2, 0, 2, 1, 2, 2, 2, 1, 2, 2, 2, 0, 0, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 0, 2, 2, 1, 2, 2, 2, 2, 1, 2, 0,
-                  2, 1, 2, 2, 0, 1, 0, 1, 2, 1, 0, 2, 2, 2, 1, 0, 1, 0, 2, 1, 2, 2, 2, 0, 2, 1, 2, 2, 0, 1, 2, 0, 0, 1, 0, 1, 1,
-                  1, 2, 1, 0, 1, 2, 1, 2, 2, 0, 0, 0, 2, 1, 1, 2, 2, 1, 2])
+    pitch_histograms = []
+    for pitch_histogram in TEST_PITCH_HISTOGRAMS:
+        h = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
+        pitch_histogram_k = bin(h).count('1') * MUSIC_KEY_PROFILE_OFFSET
+        #print(f"{pitch_histogram} ~ {h:#06x} -> {bin(h).count('1')} pitch classes ~  Kh = {pitch_histogram_k}")
+        pitch_histograms.append(h)
+
+    V = np.array(pitch_histograms)
 
     # Transition Probabilities
-    a = np.ones((2, 2))
+    a = np.ones((NUM_MODES * NUM_NOTES, NUM_MODES * NUM_NOTES))
     a = a / np.sum(a, axis=1)
 
     # Emission Probabilities
     b = EmissionProbabilities()
 
     # Equal Probabilities for the initial distribution
-    initial_distribution = np.array([1] * 2)
+    initial_distribution = np.array([1] * NUM_MODES * NUM_NOTES)
     initial_distribution = initial_distribution / np.sum(initial_distribution)
 
     print(f"P:\n{initial_distribution}")
     print(f"A:\n{a}")
     print(f"B:\n{b}")
-    print(['{}:{}'.format(NOTE_NAMES[int(s)%12], MODE_NAMES[int(s)//12]) for s in viterbi(V, a, b, initial_distribution)])
+    print(['{:03x}={}:{}'.format(v, NOTE_NAMES[int(s)%12], MODE_NAMES[int(s)//12]) for v, s in zip(V, viterbi(V, a, b, initial_distribution))])
 
 
 def main():
