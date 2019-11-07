@@ -6,7 +6,8 @@ import functools
 import operator
 import numpy as np
 
-NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
+NOTE_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
+MODE_NAMES = ['Maj', 'min']
 
 MUSIC_KEY_PROFILE_MAJOR = [ 5.0, 2.0, 3.5, 2.0, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 1.5, 4.0 ] # Major scale
 MUSIC_KEY_PROFILE_MINOR = [ 5.0, 2.0, 3.5, 4.5, 2.0, 4.0, 2.0, 4.5, 3.5, 2.0, 1.5, 4.0 ] # Harmonic minor scale
@@ -166,9 +167,19 @@ class EmissionProbabilities():
         self.b = np.array(((1, 3, 5), (2, 4, 6)))
         self.b = self.b / np.sum(self.b, axis=1).reshape((-1, 1))
 
+        self.data = [
+            MUSIC_KEY_FREQUENCIES_MAJOR + MUSIC_KEY_FREQUENCIES_MAJOR,
+            MUSIC_KEY_FREQUENCIES_MINOR + MUSIC_KEY_FREQUENCIES_MINOR,
+        ]
+
+    def get_probabilities(self, root_note, mode):
+        return np.array(self.data[mode][12 - root_note:24 - root_note])
+
+    def get_probabilities_for_histogram(self, root_note, mode, pitch_classes):
+        return [p if (pitch_classes & 1<<(r%12) != 0) else (1. - p) for r, p in enumerate(self.data[mode][12 - root_note:24 - root_note])]
+
     def __getitem__(self, args):
         h, o = args
-        print(f">>> HiddenStates={h} ; ObservableStates={o}")
 
         # This checks that:
         # - key is an integer (or can be converted to an integer)
@@ -176,16 +187,25 @@ class EmissionProbabilities():
         # - key is made = self._length when key >= self._length (not exactly as before)
         max_o = 2**12
         o = slice(o).indices(max_o)[1]
+        pitch_classes = [(o & 1<<(r%12) != 0) for r in range(0, 12)]
+        print(f">>> HiddenStates={h} ; ObservableStates={o} -> {pitch_classes}")
 
         if isinstance(h, int):
-            return 1.
+            note = h % 12
+            mode = h // 12
+            raw_probabilities = self.get_probabilities(note, mode)
+            probabilities = self.get_probabilities_for_histogram(note, mode, o)
+            probability = functools.reduce(operator.mul, probabilities)
+            print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ; Data={probabilities} -> {probability}")
+            return probability
         elif isinstance(h, slice):
             max_h = 2 * 12
             v = np.array((0.5, 0.5))
             for i in range(*h.indices(max_h)):
                 note = i % 12
                 mode = i // 12
-                print(f">>> Note={note} ; Mode={mode} ; ObservableState={o} ; Values={v}")
+                data = self.get_probabilities(note, mode)
+                print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ; Data={data}")
             return v
         else:
             raise TypeError("index must be int or slice")
@@ -258,12 +278,13 @@ def test_viterbi():
     b = EmissionProbabilities()
 
     # Equal Probabilities for the initial distribution
-    initial_distribution = np.array((0.5, 0.5))
+    initial_distribution = np.array([1] * 2)
+    initial_distribution = initial_distribution / np.sum(initial_distribution)
 
     print(f"P:\n{initial_distribution}")
     print(f"A:\n{a}")
     print(f"B:\n{b}")
-    print([['A', 'B'][int(s)] for s in viterbi(V, a, b, initial_distribution)])
+    print(['{}:{}'.format(NOTE_NAMES[int(s)%12], MODE_NAMES[int(s)//12]) for s in viterbi(V, a, b, initial_distribution)])
 
 
 def main():
