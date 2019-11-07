@@ -4,6 +4,7 @@
 import math
 import functools
 import operator
+import numpy as np
 
 NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
 
@@ -160,6 +161,111 @@ TEST_PITCH_HISTOGRAMS = [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ]
 
+class EmissionProbabilities():
+    def __init__(self):
+        self.b = np.array(((1, 3, 5), (2, 4, 6)))
+        self.b = self.b / np.sum(self.b, axis=1).reshape((-1, 1))
+
+    def __getitem__(self, args):
+        h, o = args
+        print(f">>> HiddenStates={h} ; ObservableStates={o}")
+
+        # This checks that:
+        # - key is an integer (or can be converted to an integer)
+        # - key is replaced by an appropriate positive value when < 0
+        # - key is made = self._length when key >= self._length (not exactly as before)
+        max_o = 2**12
+        o = slice(o).indices(max_o)[1]
+
+        if isinstance(h, int):
+            return 1.
+        elif isinstance(h, slice):
+            max_h = 2 * 12
+            v = np.array((0.5, 0.5))
+            for i in range(*h.indices(max_h)):
+                note = i % 12
+                mode = i // 12
+                print(f">>> Note={note} ; Mode={mode} ; ObservableState={o} ; Values={v}")
+            return v
+        else:
+            raise TypeError("index must be int or slice")
+
+def viterbi(V, a, b, initial_distribution):
+    T = V.shape[0]
+    M = a.shape[0]
+
+    omega = np.zeros((T, M))
+    omega[0, :] = np.log(initial_distribution * b[:, V[0]])
+
+    prev = np.zeros((T - 1, M))
+
+    # ωi(t+1) = max(i, ωi(t)·aij·bjkv(t+1))
+
+    # One implementation trick is to use the log scale so that we dont get the underflow error.
+
+    for t in range(1, T):
+        for j in range(M):
+            # Same as Forward Probability
+            probability = omega[t - 1] + np.log(a[:, j]) + np.log(b[j, V[t]])
+
+            # This is our most probable state given previous state at time t (1)
+            prev[t - 1, j] = np.argmax(probability)
+
+            # This is the probability of the most probable state (2)
+            omega[t, j] = np.max(probability)
+
+    # Path Array
+    S = np.zeros(T)
+
+    # Find the most probable last hidden state
+    last_state = np.argmax(omega[T - 1, :])
+
+    S[0] = last_state
+
+    backtrack_index = 1
+    for i in range(T - 2, -1, -1):
+        S[backtrack_index] = prev[i, int(last_state)]
+        last_state = prev[i, int(last_state)]
+        backtrack_index += 1
+
+    # Flip the path array since we were backtracking
+    S = np.flip(S, axis=0)
+
+    return S
+
+
+def test_viterbi():
+    V = np.array([0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 1, 1, 0, 2, 1, 2, 0, 2, 0, 1, 2, 1, 2, 0, 2,
+                  0, 2, 2, 0, 2, 2, 2, 0, 0, 1, 0, 1, 2, 2, 2, 2, 0, 2, 2, 2, 1, 2, 0, 1, 0, 0, 2, 1, 2, 1, 1, 1, 0, 2, 0, 0, 1,
+                  1, 2, 0, 1, 2, 0, 1, 0, 2, 1, 0, 0, 2, 0, 1, 0, 2, 1, 2, 1, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 1, 1, 1, 2, 2, 1, 2,
+                  2, 1, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 1, 1, 1, 2, 1, 0, 1, 0, 1, 0, 1, 2, 0, 2, 2, 1, 0, 0, 1, 1, 2, 2, 0, 2, 0,
+                  0, 0, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2, 1, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 1, 2, 1, 1, 1, 2, 2,
+                  2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 1, 2, 1, 2, 1, 2, 0, 2, 0, 1, 2, 0, 1, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1,
+                  0, 0, 1, 2, 1, 0, 2, 2, 1, 2, 2, 2, 1, 0, 1, 2, 2, 2, 1, 0, 1, 0, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 2, 0, 2, 0, 1,
+                  1, 2, 0, 0, 2, 2, 2, 1, 1, 0, 0, 1, 2, 1, 2, 1, 0, 2, 0, 2, 2, 0, 0, 0, 1, 0, 1, 1, 1, 2, 2, 0, 1, 2, 2, 2, 0,
+                  1, 1, 2, 2, 0, 1, 2, 2, 2, 2, 2, 2, 0, 1, 2, 2, 0, 2, 0, 2, 2, 2, 1, 2, 2, 2, 1, 1, 1, 1, 2, 0, 0, 0, 2, 2, 1,
+                  1, 2, 1, 0, 2, 1, 1, 1, 0, 1, 2, 1, 2, 1, 2, 2, 2, 0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 1, 0, 1, 1, 1, 2, 1, 2, 2, 2,
+                  2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 0, 1, 2, 0, 1, 2, 1, 2, 0, 2, 1, 0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2, 1,
+                  2, 0, 2, 1, 2, 2, 2, 1, 2, 2, 2, 0, 0, 2, 1, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 0, 2, 2, 1, 2, 2, 2, 2, 1, 2, 0,
+                  2, 1, 2, 2, 0, 1, 0, 1, 2, 1, 0, 2, 2, 2, 1, 0, 1, 0, 2, 1, 2, 2, 2, 0, 2, 1, 2, 2, 0, 1, 2, 0, 0, 1, 0, 1, 1,
+                  1, 2, 1, 0, 1, 2, 1, 2, 2, 0, 0, 0, 2, 1, 1, 2, 2, 1, 2])
+
+    # Transition Probabilities
+    a = np.ones((2, 2))
+    a = a / np.sum(a, axis=1)
+
+    # Emission Probabilities
+    b = EmissionProbabilities()
+
+    # Equal Probabilities for the initial distribution
+    initial_distribution = np.array((0.5, 0.5))
+
+    print(f"P:\n{initial_distribution}")
+    print(f"A:\n{a}")
+    print(f"B:\n{b}")
+    print([['A', 'B'][int(s)] for s in viterbi(V, a, b, initial_distribution)])
+
+
 def main():
     print(f"Major: {MUSIC_KEY_PROFILE_MAJOR} -> {MUSIC_KEY_FREQUENCIES_MAJOR} (K = {MUSIC_KEY_K_MAJOR})")
     print(f"Minor: {MUSIC_KEY_PROFILE_MINOR} -> {MUSIC_KEY_FREQUENCIES_MINOR} (K = {MUSIC_KEY_K_MINOR})")
@@ -214,4 +320,5 @@ def main():
             print(f"{pitch_histogram} -> {major_values} (Err: {major_error})  {minor_values} (Err: {minor_error})")
 
 if __name__ == '__main__':
-    main()
+    #main()
+    test_viterbi()
