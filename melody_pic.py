@@ -178,6 +178,16 @@ class MelodyPic:
 
     CHORDS_INFO = [
         [
+            # Nineth chords
+            [ [], (0, 4, 7, 11, 14), "Major 9th Chord" ],
+            [ [], (0, 4, 7, 10, 14), "Dominant 9th Chord" ],
+            [ [], (0, 3, 7, 10, 14), "Minor 9th Chord" ],
+
+            [ [], (0, 4, 7, 10, 15), "Major 7#9 Chord" ],
+            [ [], (0, 4, 7, 10, 13), "Major 7b9 Chord" ],
+            [ [], (0, 4, 7, 14),     "Major add9 Chord" ],
+            [ [], (0, 3, 7, 14),     "Minor m(add9) Chord" ],
+
             # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
             [ [], (0, 4, 7, 11), "Major 7th Chord" ],
             [ [], (0, 3, 7, 10), "Minor 7th Chord" ],
@@ -376,11 +386,12 @@ class MelodyPic:
         cx = self.width - 32 * self.hstep / 2
         cy = (self.height - 2 * self.hstep - 11 * self.vstep) / 2
 
-        nr  = 15.
-        cr = min(self.width - cx, cy) - 2 * nr
+        midr  = 14.
+        cr = min(self.width - cx, cy) - 2 * midr
 
         nx = [cx + cr * math.sin(2. * math.pi * ((n * 7) % 12) / 12.) for n in range(12)]
         ny = [cy - cr * math.cos(2. * math.pi * ((n * 7) % 12) / 12.) for n in range(12)]
+        nr = [midr if i else midr - 4. for i in self.notes_in_scale]
 
         for n1 in range(12):
             for n_inc in [3, 4, 5, 7]:
@@ -394,6 +405,7 @@ class MelodyPic:
 
         self.ctx.save()
         for chord_root, chord_name, chord_intervals in self.chords_found:
+            nr[chord_root] = midr + 6.
             chord_color = self.get_chord_color(chord_root, chord_intervals)
             self.ctx.set_source_rgb(*chord_color)
             self.ctx.set_line_width(50.0)
@@ -440,7 +452,7 @@ class MelodyPic:
                 color = self.get_color_from_note(n % 12, .1)
 
             self.ctx.set_source_rgb(*color)
-            self.ctx.arc(nx[n], ny[n], nr, 0, 2. * math.pi)
+            self.ctx.arc(nx[n], ny[n], nr[n], 0, 2. * math.pi)
             self.ctx.fill()
 
             if is_pressed:
@@ -450,19 +462,19 @@ class MelodyPic:
 
             #self.ctx.move_to(x + nr, y)
             self.ctx.set_source_rgb(0.3, 0.3, 0.3)
-            self.ctx.arc(nx[n], ny[n], nr, 0, 2. * math.pi)
+            self.ctx.arc(nx[n], ny[n], nr[n], 0, 2. * math.pi)
             self.ctx.stroke()
 
             if (n % 12 == self.root_note):
                 self.ctx.set_source_rgb(0., 0., 0.)
-                self.ctx.arc(nx[n], ny[n], nr + 8., 0, 2. * math.pi)
+                self.ctx.arc(nx[n], ny[n], nr[n] + 6., 0, 2. * math.pi)
                 self.ctx.set_line_width(1.0)
                 self.ctx.stroke()
 
             label = PIANO_NOTE_NAMES[n % 12]
             self.ctx.set_source_rgb(0.1, 0.1, 0.1)
             self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-            self.ctx.set_font_size(12)
+            self.ctx.set_font_size(nr[n] + 2)
             text_extents = self.ctx.text_extents(str(label))
             self.ctx.move_to(nx[n] - text_extents.width/2., ny[n] + text_extents.height/2.)
             self.ctx.show_text(str(label))
