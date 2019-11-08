@@ -165,11 +165,34 @@ TEST_PITCH_HISTOGRAMS = [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 ]
 
+class StateChangeProbabilities():
+    def __init__(self, prob_same_state):
+        self.prob_same_state = prob_same_state
+        self.prob_other_state = (1. - self.prob_same_state) / (NUM_MODES * NUM_NOTES - 1)
+        self.shape = (NUM_MODES * NUM_NOTES, NUM_MODES * NUM_NOTES)
+
+    def __getitem__(self, args):
+        initial_state, final_state = args
+
+        if isinstance(initial_state, int) and isinstance(final_state, int):
+            if (initial_state == final_state):
+                probability = self.prob_same_state
+            else:
+                probability = self.prob_other_state
+            #print(f">>> InitialState={initial_state} ; FinalState={final_state} -> Probability={probability}")
+            return probability
+
+        elif isinstance(initial_state, slice):
+            probabilities = np.array([self.prob_other_state] * NUM_MODES * NUM_NOTES)
+            probabilities[final_state] = self.prob_same_state
+            #print(f">>> InitialState={initial_state} ; FinalState={final_state} -> Probabilities={probabilities}")
+            return probabilities
+
+        else:
+            raise TypeError("index must be int or slice")
+
 class EmissionProbabilities():
     def __init__(self):
-        self.b = np.array(((1, 3, 5), (2, 4, 6)))
-        self.b = self.b / np.sum(self.b, axis=1).reshape((-1, 1))
-
         self.data = [
             MUSIC_KEY_FREQUENCIES_MAJOR + MUSIC_KEY_FREQUENCIES_MAJOR,
             MUSIC_KEY_FREQUENCIES_MINOR + MUSIC_KEY_FREQUENCIES_MINOR,
@@ -190,8 +213,9 @@ class EmissionProbabilities():
         # - key is made = self._length when key >= self._length (not exactly as before)
         max_o = 2**12
         o = slice(o).indices(max_o)[1]
+
         pitch_classes = [(o & 1<<(r%12) != 0) for r in range(0, 12)]
-        #print(f">>> HiddenStates={h} ; ObservableStates={o} -> {pitch_classes}")
+        #print(f">>> HiddenStates={h} ; ObservableStates={o:03x} -> {pitch_classes}")
 
         if isinstance(h, int):
             note = h % 12
@@ -273,8 +297,10 @@ def test_viterbi():
     V = np.array(pitch_histograms)
 
     # Transition Probabilities
-    a = np.array([[80. if i == j else (20. / (NUM_MODES * NUM_NOTES - 1)) for i in range(NUM_MODES * NUM_NOTES)] for j in range(NUM_MODES * NUM_NOTES)])
-    a = a / np.sum(a, axis=1)
+    #a = np.array([[80. if i == j else (20. / (NUM_MODES * NUM_NOTES - 1)) for i in range(NUM_MODES * NUM_NOTES)] for j in range(NUM_MODES * NUM_NOTES)])
+    #a = a / np.sum(a, axis=1)
+
+    a = StateChangeProbabilities(0.8)
 
     # Emission Probabilities
     b = EmissionProbabilities()
@@ -284,8 +310,6 @@ def test_viterbi():
     initial_distribution = initial_distribution / np.sum(initial_distribution)
 
     #print(f"P:\n{initial_distribution}")
-    #print(f"A:\n{a}")
-    #print(f"B:\n{len(b)}")
     print(['{:03x}={}:{}'.format(v, NOTE_NAMES[int(s)%12], MODE_NAMES[int(s)//12]) for v, s in zip(V, viterbi(V, a, b, initial_distribution))])
 
 
@@ -295,7 +319,7 @@ def test_probability_conversion():
     for pitch_histogram in TEST_PITCH_HISTOGRAMS:
         h = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
         pitch_histogram_k = bin(h).count('1') * MUSIC_KEY_PROFILE_OFFSET
-        print(f"{pitch_histogram} ~ {h:#06x} -> {bin(h).count('1')} pitch classes ~  Kh = {pitch_histogram_k}")
+        #print(f"{pitch_histogram} ~ {h:#06x} -> {bin(h).count('1')} pitch classes ~  Kh = {pitch_histogram_k}")
 
         ks_major_values = [
             sum([
