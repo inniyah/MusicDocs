@@ -201,7 +201,7 @@ class EmissionProbabilities():
             probability = functools.reduce(operator.mul, probabilities)
             p1 = [round(p, 2) if c else math.nan for c, p in zip(pitch_classes, probabilities)]
             p2 = [round(p, 2) if not c else math.nan for c, p in zip(pitch_classes, probabilities)]
-            print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ~ {o:012b} ; Data={p1}; {p2} -> {probability}")
+            #print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ~ {o:012b} ; Data={p1}; {p2} -> {probability}")
             return probability
         elif isinstance(h, slice):
             max_h = NUM_MODES * NUM_NOTES
@@ -212,8 +212,8 @@ class EmissionProbabilities():
                 probabilities = self.get_probabilities(note, mode)
                 p1 = [round(p, 2) if c else math.nan for c, p in zip(pitch_classes, probabilities)]
                 p2 = [round(p, 2) if not c else math.nan for c, p in zip(pitch_classes, probabilities)]
-                print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ; Data={p1}; {p2}")
-            print(f">>> Value={v}")
+                #print(f">>> Note={note} ; Mode={mode} ; ObservableState={o:03x} ; Data={p1}; {p2}")
+            #print(f">>> Value={v}")
             return v
         else:
             raise TypeError("index must be int or slice")
@@ -273,7 +273,7 @@ def test_viterbi():
     V = np.array(pitch_histograms)
 
     # Transition Probabilities
-    a = np.ones((NUM_MODES * NUM_NOTES, NUM_MODES * NUM_NOTES))
+    a = np.array([[80. if i == j else (20. / (NUM_MODES * NUM_NOTES - 1)) for i in range(NUM_MODES * NUM_NOTES)] for j in range(NUM_MODES * NUM_NOTES)])
     a = a / np.sum(a, axis=1)
 
     # Emission Probabilities
@@ -283,13 +283,13 @@ def test_viterbi():
     initial_distribution = np.array([1] * NUM_MODES * NUM_NOTES)
     initial_distribution = initial_distribution / np.sum(initial_distribution)
 
-    print(f"P:\n{initial_distribution}")
-    print(f"A:\n{a}")
-    print(f"B:\n{b}")
+    #print(f"P:\n{initial_distribution}")
+    #print(f"A:\n{a}")
+    #print(f"B:\n{len(b)}")
     print(['{:03x}={}:{}'.format(v, NOTE_NAMES[int(s)%12], MODE_NAMES[int(s)//12]) for v, s in zip(V, viterbi(V, a, b, initial_distribution))])
 
 
-def main():
+def test_probability_conversion():
     print(f"Major: {MUSIC_KEY_PROFILE_MAJOR} -> {MUSIC_KEY_FREQUENCIES_MAJOR} (K = {MUSIC_KEY_K_MAJOR})")
     print(f"Minor: {MUSIC_KEY_PROFILE_MINOR} -> {MUSIC_KEY_FREQUENCIES_MINOR} (K = {MUSIC_KEY_K_MINOR})")
     for pitch_histogram in TEST_PITCH_HISTOGRAMS:
@@ -343,5 +343,5 @@ def main():
             print(f"{pitch_histogram} -> {major_values} (Err: {major_error})  {minor_values} (Err: {minor_error})")
 
 if __name__ == '__main__':
-    #main()
+    test_probability_conversion()
     test_viterbi()
