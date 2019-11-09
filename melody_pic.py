@@ -250,7 +250,17 @@ class MelodyPic:
     def get_vpos_from_pitch_class(self, note):
         return note * 7 + self.fifths_vpos_offset
 
-    def draw_chords(self):
+    def draw_pitch_line(self, n1, n2):
+        x1 = self.width + self.hstep * (n1 - self.pitch_class_upper_limit)
+        y1 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n1) % 12) * self.vstep
+        x2 = self.width + self.hstep * (n2 - self.pitch_class_upper_limit)
+        y2 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n2) % 12) * self.vstep
+
+        self.ctx.move_to(x1, y1)
+        self.ctx.line_to(x2, y2)
+        self.ctx.stroke()
+
+    def draw_pitch_class_chords(self):
         self.ctx.save()
 
         for rel_note in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
@@ -287,20 +297,6 @@ class MelodyPic:
         if note == -1:
             return (0.9, 0.9, 0.9)
         return hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
-
-    def draw_pitch_line(self, n1, n2):
-        x1 = self.width + self.hstep * (n1 - self.pitch_class_upper_limit)
-        y1 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n1) % 12) * self.vstep
-        x2 = self.width + self.hstep * (n2 - self.pitch_class_upper_limit)
-        y2 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n2) % 12) * self.vstep
-
-        #self.ctx.save()
-
-        self.ctx.move_to(x1, y1)
-        self.ctx.line_to(x2, y2)
-        self.ctx.stroke()
-
-        #self.ctx.restore()
 
     def draw_pitch_class(self, n):
         if (self.get_vpos_from_pitch_class(n) % 24) >= 12:
@@ -353,7 +349,7 @@ class MelodyPic:
 
         #self.ctx.restore()
 
-    def draw_pitch_classes(self):
+    def draw_pitch_class_lines(self):
         # Pitch classes
         for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
             c = 0
@@ -376,7 +372,7 @@ class MelodyPic:
 
                     self.draw_pitch_line(n, n2)
 
-        # Pitch classes
+    def draw_pitch_class_notes(self):
         for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
             self.draw_pitch_class(n)
 
@@ -494,8 +490,9 @@ class MelodyPic:
         self.draw_white_keys()
         self.draw_black_keys()
 
-        self.draw_chords()
-        self.draw_pitch_classes()
+        self.draw_pitch_class_chords()
+        self.draw_pitch_class_lines()
+        self.draw_pitch_class_notes()
 
         self.draw_circle_of_fifths()
 
@@ -537,8 +534,12 @@ class MelodyPic:
         self.chords_found = self.find_chords()
         #print("{}".format(self.chords_found))
 
-    def change_root(self, num_key):
+    def change_root(self, num_key, scale=None):
         self.root_note = (num_key % 12)
         self.scale = MusicScale(self.root_note)
         self.note_names = self.scale.getChromaticNoteNames()
         print(self.note_names)
+
+        if not scale is None:
+            print(f"{scale:03x} ~ {scale:012b}")
+            #self.notes_in_scale = [(scale & 1<<(r%12) != 0) for r in range(12)]

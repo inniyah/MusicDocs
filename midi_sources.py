@@ -9,7 +9,7 @@ import sys
 from threading import Thread, Lock
 
 from GeneralMidi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
-from KeyFindingHMM import find_music_key, get_music_key_name
+from KeyFindingHMM import find_music_key, get_music_key_name, get_root_note_from_music_key, get_scale_from_music_key
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -241,7 +241,7 @@ class MidiFileSoundPlayer():
         eprint(f"bar #1 (start) -> {get_music_key_name(music_key)}")
         if self.keyboard_handlers:
             for keyboard_handler in self.keyboard_handlers:
-                keyboard_handler.change_root(music_key % 12)
+                keyboard_handler.change_root(get_root_note_from_music_key(music_key), get_scale_from_music_key(music_key))
 
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
             total_ticks_in_beat = ticks_per_beat * 4 / time_signature_denominator
@@ -285,7 +285,7 @@ class MidiFileSoundPlayer():
                     eprint(f"bar #{num_bar} -> {get_music_key_name(music_key)}")
                     if self.keyboard_handlers:
                         for keyboard_handler in self.keyboard_handlers:
-                            keyboard_handler.change_root(music_key % 12)
+                            keyboard_handler.change_root(get_root_note_from_music_key(music_key), get_scale_from_music_key(music_key))
                 else:
                     eprint(f"bar #{num_bar}")
 

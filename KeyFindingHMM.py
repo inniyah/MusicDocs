@@ -23,6 +23,9 @@ MUSIC_KEY_FREQUENCIES_MINOR = [math.exp(v - MUSIC_KEY_PROFILE_OFFSET)/(1. + math
 MUSIC_KEY_K_MAJOR = sum([math.log(1-f) for f in MUSIC_KEY_FREQUENCIES_MAJOR])
 MUSIC_KEY_K_MINOR = sum([math.log(1-f) for f in MUSIC_KEY_FREQUENCIES_MINOR])
 
+MUSIC_SCALE_MAJOR = (1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<11)
+MUSIC_SCALE_MINOR = (1<<0) + (1<<2) + (1<<4) + (1<<5) + (1<<7) + (1<<9) + (1<<10)
+
 TEST_PITCH_HISTOGRAMS = [
         [2, 0, 0, 0, 2, 0, 0, 3, 0, 0, 0, 2],
         [1, 0, 0, 0, 2, 0, 0, 0, 0, 5, 0, 2],
@@ -294,9 +297,14 @@ def find_music_key(pitch_histograms):
     initial_distribution = initial_distribution / np.sum(initial_distribution)
     return [int(s) for s in viterbi(V, a, b, initial_distribution)]
 
-
 def get_music_key_name(s):
     return '{}:{}'.format(NOTE_NAMES[int(s)%12], MODE_NAMES[int(s)//12])
+
+def get_root_note_from_music_key(s):
+    return int(s) % 12
+
+def get_scale_from_music_key(s):
+    return [MUSIC_SCALE_MAJOR, MUSIC_SCALE_MINOR][int(s) // 12]
 
 def test_viterbi():
     pitch_histograms = []
