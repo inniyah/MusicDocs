@@ -9,6 +9,7 @@ import sys
 from threading import Thread, Lock
 
 from GeneralMidi import MIDI_GM1_INSTRUMENT_NAMES, MIDI_PERCUSSION_NAMES
+from KeyFindingHMM import find_music_key, get_music_key_name
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -98,13 +99,6 @@ class RandomSoundPlayer():
             self.press(key, velocity, duration)
         #if self.keyboard_handler: self.keyboard_handler.show(False)
 
-def guess_scale(music_key, scale_type, pitch_histogram):
-    major_values = [sum([MUSIC_KEY_PROFILE_MAJOR[i] if pitch_histogram[(key + i)%12] > 0 else 0. for i in range(12)]) for key in range(12)]
-    minor_values = [sum([MUSIC_KEY_PROFILE_MINOR[i] if pitch_histogram[(key + i)%12] > 0 else 0. for i in range(12)]) for key in range(12)]
-    eprint(f"{pitch_histogram} -> {major_values} {minor_values}")
-
-    return music_key, scale_type
-
 class MidiFileSoundPlayer():
     def __init__(self, filename, keyboard_handlers=None):
         self.keyboard_handlers = keyboard_handlers
@@ -138,6 +132,8 @@ class MidiFileSoundPlayer():
 
         scale_key = 0 # C
         scale_type = 0 # Major
+
+        pitch_histogram_per_bar = []
 
         pitch_histogram = [0] * 12
         self.instruments = set()
@@ -182,10 +178,14 @@ class MidiFileSoundPlayer():
                 pitch_classes_in_beat = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
 
             while count_ticks_in_measure >= total_ticks_in_measure:
-                #eprint(f"{num_bar}: {pitch_histogram} ({time_of_measure:1f} s)")
-                scale_key, scale_type = guess_scale(scale_key, scale_type, pitch_histogram)
+                h = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
+                pitch_histogram_per_bar.append(h)
+                eprint(f"Bar #{num_bar}: {pitch_histogram} ({time_of_measure:1f} s) -> {h:03x} ~ {h:012b}")
                 num_bar += 1
                 count_ticks_in_measure -= total_ticks_in_measure
+
+        self.music_key_per_bar = find_music_key(pitch_histogram_per_bar)
+        print(['{:03x}={}'.format(v, get_music_key_name(s)) for v, s in zip(pitch_histogram_per_bar, self.music_key_per_bar)])
 
         self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
         eprint(f"end: {pitch_histogram}")
@@ -237,6 +237,12 @@ class MidiFileSoundPlayer():
         num_bar = 1
         num_beat = 1
 
+        music_key = self.music_key_per_bar[0]
+        eprint(f"bar #1 (start) -> {get_music_key_name(music_key)}")
+        if self.keyboard_handlers:
+            for keyboard_handler in self.keyboard_handlers:
+                keyboard_handler.change_root(music_key % 12)
+
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
             total_ticks_in_beat = ticks_per_beat * 4 / time_signature_denominator
             total_ticks_in_measure = ticks_per_beat * time_signature_numerator * 4 / time_signature_denominator
@@ -269,9 +275,19 @@ class MidiFileSoundPlayer():
                     keyboard_handler.set_chord(pitch_classes_in_beat)
 
             while count_ticks_in_measure >= total_ticks_in_measure:
+                try:
+                    music_key = self.music_key_per_bar[num_bar-1]
+                except IndexError:
+                    music_key = None
                 num_bar += 1
                 count_ticks_in_measure -= total_ticks_in_measure
-                eprint(f"bar: {num_bar}")
+                if not music_key is None:
+                    eprint(f"bar #{num_bar} -> {get_music_key_name(music_key)}")
+                    if self.keyboard_handlers:
+                        for keyboard_handler in self.keyboard_handlers:
+                            keyboard_handler.change_root(music_key % 12)
+                else:
+                    eprint(f"bar #{num_bar}")
 
             current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
             #sys.stdout.write(repr(message) + '\n')
@@ -292,7 +308,8 @@ class MidiFileSoundPlayer():
                             keyboard_handler.press(message.note, message.channel, False, message.channel == 9)
 
                 elif message.type == 'control_change':
-                    eprint('Control {} for {} changed to {}'.format(message.control, message.channel, message.value))
+                    #eprint('Control {} for {} changed to {}'.format(message.control, message.channel, message.value))
+                    pass
 
                 elif message.type == 'program_change':
                     channel_programs[message.channel] = message.program
@@ -312,6 +329,9 @@ class MidiFileSoundPlayer():
                     eprint(f'Time signature changed to {message.numerator}/{message.denominator}. Clocks per click: {message.clocks_per_click}, Notated 32nd Notes per_Beat: {message.notated_32nd_notes_per_beat}')
                 elif message.type == 'key_signature':
                     eprint(f'Key signature changed to {message.key}')
+
+        for keyboard_handler in self.keyboard_handlers:
+            keyboard_handler.set_chord(0)
 
     def __del__(self): # See:https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/
         self.fs.delete()

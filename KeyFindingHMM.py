@@ -286,6 +286,18 @@ def viterbi(V, a, b, initial_distribution):
     return S
 
 
+def find_music_key(pitch_histograms):
+    V = np.array(pitch_histograms)
+    a = StateChangeProbabilities(0.8)
+    b = EmissionProbabilities()
+    initial_distribution = np.array([1] * NUM_MODES * NUM_NOTES)
+    initial_distribution = initial_distribution / np.sum(initial_distribution)
+    return [int(s) for s in viterbi(V, a, b, initial_distribution)]
+
+
+def get_music_key_name(s):
+    return '{}:{}'.format(NOTE_NAMES[int(s)%12], MODE_NAMES[int(s)//12])
+
 def test_viterbi():
     pitch_histograms = []
     for pitch_histogram in TEST_PITCH_HISTOGRAMS:
