@@ -107,9 +107,12 @@ def main():
 
         #print('FPS: %f' % clock.get_fps())
 
+    midi_filename = None
     midi_filename = 'Hallelujah.mid'
     #midi_filename = 'borodin_polovtsian.mid'
     #midi_filename = 'Debussy_Arabesque_No1.mid'
+    #midi_filename = 'HotelCalifornia.mid'
+    #midi_filename = 'BohemianRhapsody.mid'
     if not midi_filename is None:
         midi_file_player = MidiFileSoundPlayer(midi_filename, [pic])
         midi_thread = Thread(target = midi_file_player.play)
