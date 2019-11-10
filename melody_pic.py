@@ -179,38 +179,38 @@ class MelodyPic:
     CHORDS_INFO = [
         [
             # Nineth chords
-            [ [], (0, 4, 7, 11, 14), "Major 9th Chord" ],
-            [ [], (0, 4, 7, 10, 14), "Dominant 9th Chord" ],
-            [ [], (0, 3, 7, 10, 14), "Minor 9th Chord" ],
+            #[ [], [0, 4, 7, 11, 14], "Major 9th Chord" ],
+            #[ [], [0, 4, 7, 10, 14], "Dominant 9th Chord" ],
+            #[ [], [0, 3, 7, 10, 14], "Minor 9th Chord" ],
 
-            [ [], (0, 4, 7, 10, 15), "Major 7#9 Chord" ],
-            [ [], (0, 4, 7, 10, 13), "Major 7b9 Chord" ],
-            [ [], (0, 4, 7, 14),     "Major add9 Chord" ],
-            [ [], (0, 3, 7, 14),     "Minor m(add9) Chord" ],
+            #[ [], [0, 4, 7, 10, 15], "Major 7#9 Chord" ],
+            #[ [], [0, 4, 7, 10, 13], "Major 7b9 Chord" ],
+            #[ [], [0, 4, 7, 14],     "Major add9 Chord" ],
+            #[ [], [0, 3, 7, 14],     "Minor m(add9) Chord" ],
 
             # Tertian seventh chords: constructed using a sequence of major thirds and/or minor thirds
-            [ [], (0, 4, 7, 11), "Major 7th Chord" ],
-            [ [], (0, 3, 7, 10), "Minor 7th Chord" ],
-            [ [], (0, 4, 7, 10), "Dominant 7th Chord" ],
-            [ [], (0, 3, 6,  9), "Diminished 7th Chord" ],
-            [ [], (0, 3, 6, 10), "Half-diminished 7th Chord" ],
-            [ [], (0, 3, 7, 11), "Minor major 7th Chord" ],
-            [ [], (0, 4, 8, 11), "Augmented major 7th Chord" ],
+            [ [], [0, 4, 7, 11], "Major 7th Chord" ],
+            [ [], [0, 3, 7, 10], "Minor 7th Chord" ],
+            [ [], [0, 4, 7, 10], "Dominant 7th Chord" ],
+            [ [], [0, 3, 6,  9], "Diminished 7th Chord" ],
+            [ [], [0, 3, 6, 10], "Half-diminished 7th Chord" ],
+            [ [], [0, 3, 7, 11], "Minor major 7th Chord" ],
+            [ [], [0, 4, 8, 11], "Augmented major 7th Chord" ],
         ],
         [
             # Primary triads
-            [ [], (0, 4, 7),  "Major Triad" ],
-            [ [], (0, 3, 7),  "Minor Triad" ],
-            [ [], (0, 3, 6),  "Diminished Triad" ],
-            [ [], (0, 4, 8),  "Augmented Triad" ],
+            [ [], [0, 4, 7],  "Major Triad" ],
+            [ [], [0, 3, 7],  "Minor Triad" ],
+            [ [], [0, 3, 6],  "Diminished Triad" ],
+            [ [], [0, 4, 8],  "Augmented Triad" ],
         ],
         [
             # Suspended triads
-            [ [], (0, 2, 7),  "Sus2 Triad" ],
-            [ [], (0, 5, 7),  "Sus4 Triad" ],
+            [ [], [0, 2, 7],  "Sus2 Triad" ],
+            [ [], [0, 5, 7],  "Sus4 Triad" ],
 
-            [ [], (0, 7, 9),  "6Sus Triad" ],
-            [ [], (0, 7, 10), "7Sus Triad" ],
+            [ [], [0, 7, 9],  "6Sus Triad" ],
+            [ [], [0, 7, 10], "7Sus Triad" ],
         ],
     ]
 
@@ -349,28 +349,34 @@ class MelodyPic:
 
         #self.ctx.restore()
 
+    def is_pitch_class_visible(self, n):
+        return n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 12
+
     def draw_pitch_class_lines(self):
-        # Pitch classes
         for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
-            c = 0
-            for d in [3, 4, 7]:
-                if d == 7 and c >= 0:
-                    continue
-                n2 = n - d
-                if n2 >= self.pitch_class_lower_limit and (self.get_vpos_from_pitch_class(n) % 24) < 12 and (self.get_vpos_from_pitch_class(n2) % 24) < 12:
-                    c += 1
-                    if self.notes_in_scale[n % 12] and self.notes_in_scale[n2 % 12]:
+            for d in [3, 4]:
+                m = n - d
+                if self.is_pitch_class_visible(n) and self.is_pitch_class_visible(m):
+                    if self.notes_in_scale[n % 12] and self.notes_in_scale[m % 12]:
                         self.ctx.set_source_rgb(0.4, 0.4, 0.4)
                         self.ctx.set_line_width(2.0)
                     else:
                         self.ctx.set_source_rgb(0.8, 0.8, 0.8)
                         self.ctx.set_line_width(1.0)
+                    self.draw_pitch_line(n, m)
 
-                    if self.pitch_classes_active[(n + self.root_note) % 12] > 0 and self.pitch_classes_active[(n2 + self.root_note) % 12] > 0:
-                        self.ctx.set_source_rgb(0.3, 0.3, 0.3)
-                        self.ctx.set_line_width(6.0)
+        self.ctx.set_source_rgb(0.3, 0.3, 0.3)
+        self.ctx.set_line_width(6.0)
+        for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
+            if self.pitch_classes_active[(n + self.root_note) % 12] > 0 and self.is_pitch_class_visible(n):
+                draw_fifth = True
+                for d in [3, 4]:
+                    if self.pitch_classes_active[(n + self.root_note - d) % 12] > 0 and self.is_pitch_class_visible(n - d):
+                        self.draw_pitch_line(n, n - d)
+                        draw_fifth = False
+                if draw_fifth and self.pitch_classes_active[(n + self.root_note - 7) % 12] > 0 and self.is_pitch_class_visible(n - 7):
+                    self.draw_pitch_line(n, n - 7)
 
-                    self.draw_pitch_line(n, n2)
 
     def draw_pitch_class_notes(self):
         for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
@@ -515,6 +521,7 @@ class MelodyPic:
                 pitch_classes |= value
 
         pitch_classes = self.chord_pitch_classes
+        comp_chord_signature = 0
 
         for chords_list in self.CHORDS_INFO:
             for n in range(12):
@@ -525,6 +532,7 @@ class MelodyPic:
                         chords_found.append((note % 12, chord_name, chord_intervals))
                         #print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, self.note_names[note % 12],
                         #    pitch_classes, chord_signature, pitch_classes & ~chord_signature))
+                        comp_chord_signature |= chord_signature
                         pitch_classes &= ~chord_signature
 
         return chords_found
