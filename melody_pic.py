@@ -49,8 +49,8 @@ class MelodyPic:
 
         self.notes_in_scale = [(scale & 1<<(r%12) != 0) for r in range(tonic*7, tonic*7 + 12)]
 
-        self.vstep = 14. * math.sqrt(5.)
-        self.hstep = 14.
+        self.vstep = 12. * math.sqrt(5.)
+        self.hstep = 12.
 
         min_height_chords = int(self.hstep * 27)
 
@@ -252,9 +252,9 @@ class MelodyPic:
 
     def draw_pitch_line(self, n1, n2):
         x1 = self.width + self.hstep * (n1 - self.pitch_class_upper_limit)
-        y1 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n1) % 12) * self.vstep
+        y1 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n1) % 24) * self.vstep
         x2 = self.width + self.hstep * (n2 - self.pitch_class_upper_limit)
-        y2 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n2) % 12) * self.vstep
+        y2 = self.height - self.hstep - (self.get_vpos_from_pitch_class(n2) % 24) * self.vstep
 
         self.ctx.move_to(x1, y1)
         self.ctx.line_to(x2, y2)
@@ -298,12 +298,15 @@ class MelodyPic:
             return (0.9, 0.9, 0.9)
         return hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
 
-    def draw_pitch_class(self, n):
-        if (self.get_vpos_from_pitch_class(n) % 24) >= 12:
+    def is_pitch_class_visible(self, n):
+        return n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 15
+
+    def draw_pitch_class_note(self, n):
+        if not self.is_pitch_class_visible(n):
             return
 
         x = self.width + self.hstep * (n - self.pitch_class_upper_limit)
-        y = self.height - self.hstep - (self.get_vpos_from_pitch_class(n) % 12) * self.vstep
+        y = self.height - self.hstep - (self.get_vpos_from_pitch_class(n) % 24) * self.vstep
 
         R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
         r = R[n % 12]
@@ -339,7 +342,8 @@ class MelodyPic:
             self.ctx.stroke()
 
         label = self.note_names[n % 12]
-        #label = self.note_names[n % 12]
+        if (self.get_vpos_from_pitch_class(n) % 24) >= 12:
+            label = self.note_names_aug[n % 12]
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         self.ctx.set_font_size(10)
@@ -349,8 +353,9 @@ class MelodyPic:
 
         #self.ctx.restore()
 
-    def is_pitch_class_visible(self, n):
-        return n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 12
+    def draw_pitch_class_notes(self):
+        for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
+            self.draw_pitch_class_note(n)
 
     def draw_pitch_class_lines(self):
         for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
@@ -377,16 +382,11 @@ class MelodyPic:
                 if draw_fifth and self.pitch_classes_active[(n + self.root_note - 7) % 12] > 0 and self.is_pitch_class_visible(n - 7):
                     self.draw_pitch_line(n, n - 7)
 
-
-    def draw_pitch_class_notes(self):
-        for n in range(self.pitch_class_lower_limit, self.pitch_class_upper_limit):
-            self.draw_pitch_class(n)
-
     def draw_circle_of_fifths(self):
         self.ctx.save()
 
         cx = self.width - 32 * self.hstep / 2
-        cy = (self.height - 2 * self.hstep - 11 * self.vstep) / 2
+        cy = (self.height - 2 * self.hstep - 14 * self.vstep) / 2
 
         midr  = 14.
         cr = min(self.width - cx, cy) - 2 * midr
@@ -546,7 +546,8 @@ class MelodyPic:
         self.root_note = (num_key % 12)
         self.scale = MusicScale(self.root_note)
         self.note_names = self.scale.getChromaticNoteNames()
-        print(self.note_names)
+        self.note_names_aug = self.scale.getChromaticAugmentedNoteNames()
+        print(f"{self.note_names} , {self.note_names_aug}")
 
         if not scale is None:
             print(f"{scale:03x} ~ {scale:012b}")
