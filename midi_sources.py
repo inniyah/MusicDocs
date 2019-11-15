@@ -173,8 +173,8 @@ class MidiFileSoundPlayer():
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
                 self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
+                eprint(f"beat@{count_ticks_in_total}: {num_beat}:{current_beat_tick} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
                 current_beat_tick = count_ticks_in_total
-                #eprint(f"beat@{count_ticks_in_total}: {num_beat} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
                 pitch_classes_in_beat = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
 
             while count_ticks_in_measure >= total_ticks_in_measure:
@@ -184,10 +184,12 @@ class MidiFileSoundPlayer():
                 num_bar += 1
                 count_ticks_in_measure -= total_ticks_in_measure
 
+        eprint(f"end@{count_ticks_in_total}: {num_beat}:{current_beat_tick} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
+        self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
+
         self.music_key_per_bar = find_music_key(pitch_histogram_per_bar)
         print(['{:03x}={}'.format(v, get_music_key_name(s)) for v, s in zip(pitch_histogram_per_bar, self.music_key_per_bar)])
 
-        self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
         eprint(f"end: {pitch_histogram}")
         eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
 
@@ -237,11 +239,15 @@ class MidiFileSoundPlayer():
         num_bar = 1
         num_beat = 1
 
+        pitch_classes_in_beat = self.chords_per_beat[0]
         music_key = self.music_key_per_bar[0]
         eprint(f"bar #1 (start) -> {get_music_key_name(music_key)}")
         if self.keyboard_handlers:
             for keyboard_handler in self.keyboard_handlers:
                 keyboard_handler.change_root(get_root_note_from_music_key(music_key), get_scale_from_music_key(music_key))
+                keyboard_handler.set_chord(pitch_classes_in_beat)
+
+        eprint(f"beat@{count_ticks_in_total}: {num_beat} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
 
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
             total_ticks_in_beat = ticks_per_beat * 4 / time_signature_denominator
@@ -269,7 +275,7 @@ class MidiFileSoundPlayer():
             while count_ticks_in_beat >= total_ticks_in_beat:
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
-                pitch_classes_in_beat = self.chords_per_beat[count_ticks_in_total] 
+                pitch_classes_in_beat = self.chords_per_beat[count_ticks_in_total]
                 eprint(f"beat@{count_ticks_in_total}: {num_beat} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
                 for keyboard_handler in self.keyboard_handlers:
                     keyboard_handler.set_chord(pitch_classes_in_beat)

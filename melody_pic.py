@@ -518,8 +518,8 @@ class MelodyPic:
 
         combined_chords = []
 
-        for chord_signature, chord_root, chord_name, chord_intervals in chords:
-            print(f"Individual: {chord_signature:03x} ~ {chord_signature:012b}: {chord_root} {chord_name} {chord_intervals}")
+        #for chord_signature, chord_root, chord_name, chord_intervals in chords:
+        #    print(f"Individual: {chord_signature:03x} ~ {chord_signature:012b}: {chord_root} {chord_name} {chord_intervals}")
 
         while chords:
             combined_signature, combined_root, combined_name, combined_intervals = chords.pop(0)
@@ -540,8 +540,8 @@ class MelodyPic:
             combined_chords.append((combined_signature, combined_root, combined_name, sorted(combined_intervals)))
             chords = pending_chords
 
-        for combined_signature, combined_root, combined_name, combined_intervals in combined_chords:
-            print(f"Combined: {combined_signature:03x} ~ {combined_signature:012b}: {combined_root} {combined_name} {combined_intervals}")
+        #for combined_signature, combined_root, combined_name, combined_intervals in combined_chords:
+        #    print(f"Combined: {combined_signature:03x} ~ {combined_signature:012b}: {combined_root} {combined_name} {combined_intervals}")
         return combined_chords
 
     def find_chords(self):
