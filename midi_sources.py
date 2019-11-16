@@ -264,9 +264,6 @@ class MidiFileSoundPlayer():
 
             # Find bar:beat:subbeat
 
-            if time_to_next_event > 0.0:
-                time.sleep(time_to_next_event)
-
             if not isinstance(message, mido.MetaMessage):
                 count_ticks_in_total += message.time
                 count_ticks_in_measure += message.time
@@ -294,6 +291,9 @@ class MidiFileSoundPlayer():
                             keyboard_handler.change_root(get_root_note_from_music_key(music_key), get_scale_from_music_key(music_key))
                 else:
                     eprint(f"bar #{num_bar}")
+
+            if time_to_next_event > 0.0:
+                time.sleep(time_to_next_event)
 
             current_timestamp = time.time_ns() / (10 ** 9) # Converted to floating-point seconds
             #sys.stdout.write(repr(message) + '\n')
