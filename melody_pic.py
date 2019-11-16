@@ -519,7 +519,7 @@ class MelodyPic:
         combined_chords = []
 
         #for chord_signature, chord_root, chord_name, chord_intervals in chords:
-        #    print(f"Individual: {chord_signature:03x} ~ {chord_signature:012b}: {chord_root} {chord_name} {chord_intervals}")
+        #    print(f"<<< Individual: {chord_signature:03x} ~ {chord_signature:012b}: {chord_root} {chord_name} {chord_intervals}")
 
         while chords:
             combined_signature, combined_root, combined_name, combined_intervals = chords.pop(0)
@@ -540,8 +540,8 @@ class MelodyPic:
             combined_chords.append((combined_signature, combined_root, combined_name, sorted(combined_intervals)))
             chords = pending_chords
 
-        #for combined_signature, combined_root, combined_name, combined_intervals in combined_chords:
-        #    print(f"Combined: {combined_signature:03x} ~ {combined_signature:012b}: {combined_root} {combined_name} {combined_intervals}")
+        for combined_signature, combined_root, combined_name, combined_intervals in combined_chords:
+            print(f" >>> Combined: {combined_signature:03x} ~ {combined_signature:012b}: {combined_root} {combined_name} {combined_intervals}")
         return combined_chords
 
     def find_chords(self):
@@ -563,14 +563,16 @@ class MelodyPic:
                     chord_signature = chord_signatures[note]
                     if (pitch_classes & chord_signature) == chord_signature:
                         chords_found.append((chord_signature, note % 12, chord_name, chord_intervals))
-                        #print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, self.note_names[note % 12],
-                        #    pitch_classes, chord_signature, pitch_classes & ~chord_signature))
+                        print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, self.note_names[note % 12],
+                            pitch_classes, chord_signature, pitch_classes & ~chord_signature))
                         comp_chord_signature |= chord_signature
                         #pitch_classes &= ~chord_signature
 
         return self.combine_chords(chords_found)
 
     def set_chord(self, chord=0):
+        print(f"Pitch class histogram: {chord:#06x} = {chord:>012b}")
+
         self.chord_pitch_classes = chord
         self.chords_found = self.find_chords()
         #print("{}".format(self.chords_found))
@@ -580,7 +582,7 @@ class MelodyPic:
         self.scale = MusicScale(self.root_note)
         self.note_names = self.scale.getChromaticNoteNames()
         self.note_names_aug = self.scale.getChromaticAugmentedNoteNames()
-        print(f"{self.note_names} , {self.note_names_aug}")
+        print(f"Root change: {self.note_names} , {self.note_names_aug}")
 
         if not scale is None:
             print(f"{scale:03x} ~ {scale:012b}")
