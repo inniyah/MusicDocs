@@ -547,13 +547,13 @@ class MelodyPic:
     def find_chords(self):
         chords_found = []
 
-        pitch_classes = 0
-        for num_note in range(0, 12):
-            value = 1 << (num_note % 12)
-            if self.pitch_classes_active[num_note] > 0:
-                pitch_classes |= value
+        #pitch_classes = 0
+        #for num_note in range(0, 12):
+        #    value = 1 << (num_note % 12)
+        #    if self.pitch_classes_active[num_note] > 0:
+        #        pitch_classes |= value
 
-        #pitch_classes = self.chord_pitch_classes
+        pitch_classes = self.chord_pitch_classes
         comp_chord_signature = 0
 
         for chords_list in self.CHORDS_INFO:
@@ -563,8 +563,8 @@ class MelodyPic:
                     chord_signature = chord_signatures[note]
                     if (pitch_classes & chord_signature) == chord_signature:
                         chords_found.append((chord_signature, note % 12, chord_name, chord_intervals))
-                        print("Found: {} on {} ({:04x} - {:04x} -> {:04x})".format(chord_name, self.note_names[note % 12],
-                            pitch_classes, chord_signature, pitch_classes & ~chord_signature))
+                        #print("Found: {} on {} ({:012b} - {:012b} -> {:012b})".format(chord_name, self.note_names[note % 12],
+                        #    pitch_classes, chord_signature, pitch_classes & ~chord_signature))
                         comp_chord_signature |= chord_signature
                         #pitch_classes &= ~chord_signature
 
@@ -575,7 +575,7 @@ class MelodyPic:
 
         self.chord_pitch_classes = chord
         self.chords_found = self.find_chords()
-        #print("{}".format(self.chords_found))
+        print("{}".format(self.chords_found))
 
     def change_root(self, num_key, scale=None):
         self.root_note = (num_key % 12)
@@ -585,5 +585,6 @@ class MelodyPic:
         print(f"Root change: {self.note_names} , {self.note_names_aug}")
 
         if not scale is None:
-            print(f"{scale:03x} ~ {scale:012b}")
-            #self.notes_in_scale = [(scale & 1<<(r%12) != 0) for r in range(12)]
+            scale = ((scale << 12 | scale) >> ((12-num_key) % 12)) & 0xFFF
+            self.notes_in_scale = [(scale & 1<<(r%12) != 0) for r in range(12)]
+            print(f"{scale:03x} ~ {scale:012b} -> {self.notes_in_scale}")
