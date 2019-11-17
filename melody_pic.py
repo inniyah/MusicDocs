@@ -18,6 +18,15 @@ SCALE_MAJOR_DIATONIC = (1<<0) + (1<<2) + (1<<4) + (1<<6) + (1<<7) + (1<<9) + (1<
 #PIANO_NOTE_NAMES = ['I', 'ii', 'II', 'iii', 'III', 'IV', 'v', 'V', 'vi', 'VI', 'vii', 'VII']
 PIANO_NOTE_NAMES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 
+NOTE_NAMES_BY_FIFTHS = [
+    'Fo', 'Co', 'Go', 'Do', 'Ao', 'Eo', 'Bo',
+    'Fb', 'Cb', 'Gb', 'Db', 'Ab', 'Eb', 'Bb',
+    'F',  'C',  'G',  'D',  'A',  'E',  'B',
+    'F#', 'C#', 'G#', 'D#', 'A#', 'E#', 'B#',
+    'Fx', 'Cx', 'Gx', 'Dx', 'Ax', 'Ex', 'Bx',
+    'F&', 'C&', 'G&', 'D&', 'A&', 'E&', 'B&',
+]
+
 NOTE_MIDI_A4 = 69
 NOTE_MIDI_C4 = 60
 
@@ -316,6 +325,9 @@ class MelodyPic:
     def is_pitch_class_visible(self, n):
         return n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 15
 
+    def get_pitch_class_label(self, n):
+        return NOTE_NAMES_BY_FIFTHS[15 + ((n + self.root_note) * 7 + 7) % 24 - 7]
+
     def draw_pitch_class_note(self, n):
         if not self.is_pitch_class_visible(n):
             return
@@ -355,9 +367,7 @@ class MelodyPic:
             self.ctx.set_line_width(1.0)
             self.ctx.stroke()
 
-        label = self.note_names[n % 12]
-        if (self.get_vpos_from_pitch_class(n) % 24) >= 12:
-            label = self.note_names_aug[n % 12]
+        label = self.get_pitch_class_label(n)
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
         self.ctx.set_font_size(self.note_radius[n % 12] + 2)
