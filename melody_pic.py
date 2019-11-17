@@ -69,6 +69,8 @@ class MelodyPic:
         self.chord_pitch_classes = 0
         self.chords_found = []
 
+        self.note_radius = [14.] * 12
+
     def get_vpos_from_note(self, note):
         return note * 7 + self.fifths_vpos_offset
 
@@ -87,6 +89,19 @@ class MelodyPic:
     BLACK_KEY_WIDTH = WHITE_KEY_WIDTH * 7. / 12.
     OCTAVE_START = 2
     OCTAVE_END = 6 + 1
+
+    def draw_time_lines(self):
+        pos = 0
+        for n in range(12 * self.OCTAVE_START, 12 * (self.OCTAVE_END + 1)): # Octaves 2 to 5
+            x = 9 + (pos + 0.5) * self.BLACK_KEY_WIDTH
+            y1 = 20
+            y2 = self.height - 100 - 20
+            pos += 1
+
+            self.ctx.move_to(x, y1)
+            self.ctx.set_source_rgb(0.3, 0.3, 0.3)
+            self.ctx.line_to(x, y2)
+            self.ctx.stroke()
 
     def draw_white_keys(self):
         pos = 0
@@ -308,8 +323,7 @@ class MelodyPic:
         x = self.width + self.hstep * (n - self.pitch_class_upper_limit)
         y = self.height - self.hstep - (self.get_vpos_from_pitch_class(n) % 24) * self.vstep
 
-        R = [ 14, 10, 12, 10, 12, 12, 10, 14, 10, 12, 10, 12 ]
-        r = R[n % 12]
+        r = self.note_radius[n % 12]
 
         is_pressed = (self.pitch_classes_active[(self.root_note + n) % 12] != 0)
 
@@ -346,7 +360,7 @@ class MelodyPic:
             label = self.note_names_aug[n % 12]
         self.ctx.set_source_rgb(0.1, 0.1, 0.1)
         self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-        self.ctx.set_font_size(10)
+        self.ctx.set_font_size(self.note_radius[n % 12] + 2)
         text_extents = self.ctx.text_extents(str(label))
         self.ctx.move_to(x - text_extents.width/2., y + text_extents.height/2.)
         self.ctx.show_text(str(label))
@@ -388,12 +402,10 @@ class MelodyPic:
         cx = self.width - 32 * self.hstep / 2
         cy = (self.height - 2 * self.hstep - 14 * self.vstep) / 2
 
-        midr  = 14.
-        cr = min(self.width - cx, cy) - 2 * midr
+        cr = min(self.width - cx, cy) - 30
 
         nx = [cx + cr * math.sin(2. * math.pi * ((n * 7) % 12) / 12.) for n in range(12)]
         ny = [cy - cr * math.cos(2. * math.pi * ((n * 7) % 12) / 12.) for n in range(12)]
-        nr = [midr if i else midr - 4. for i in self.notes_in_scale]
 
         for n1 in range(12):
             for n_inc in [3, 4, 5, 7]:
@@ -408,7 +420,6 @@ class MelodyPic:
         self.ctx.save()
         for chord_signature, chord_root, chord_name, chord_intervals in self.chords_found:
             if chord_intervals:
-                nr[chord_root] = midr + 6.
                 chord_color = self.get_chord_color(chord_root, chord_intervals)
                 self.ctx.set_source_rgb(*chord_color)
                 self.ctx.set_line_width(50.0)
@@ -455,7 +466,7 @@ class MelodyPic:
                 color = self.get_color_from_note(n % 12, .1)
 
             self.ctx.set_source_rgb(*color)
-            self.ctx.arc(nx[n], ny[n], nr[n], 0, 2. * math.pi)
+            self.ctx.arc(nx[n], ny[n], self.note_radius[n], 0, 2. * math.pi)
             self.ctx.fill()
 
             if is_pressed:
@@ -463,21 +474,21 @@ class MelodyPic:
             else:
                 self.ctx.set_line_width(2.0)
 
-            #self.ctx.move_to(x + nr, y)
+            #self.ctx.move_to(x + self.note_radius[n], y)
             self.ctx.set_source_rgb(0.3, 0.3, 0.3)
-            self.ctx.arc(nx[n], ny[n], nr[n], 0, 2. * math.pi)
+            self.ctx.arc(nx[n], ny[n], self.note_radius[n], 0, 2. * math.pi)
             self.ctx.stroke()
 
             if (n % 12 == self.root_note):
                 self.ctx.set_source_rgb(0., 0., 0.)
-                self.ctx.arc(nx[n], ny[n], nr[n] + 6., 0, 2. * math.pi)
+                self.ctx.arc(nx[n], ny[n], self.note_radius[n] + 6., 0, 2. * math.pi)
                 self.ctx.set_line_width(1.0)
                 self.ctx.stroke()
 
             label = PIANO_NOTE_NAMES[n % 12]
             self.ctx.set_source_rgb(0.1, 0.1, 0.1)
             self.ctx.select_font_face("monospace", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
-            self.ctx.set_font_size(nr[n] + 2)
+            self.ctx.set_font_size(self.note_radius[n] + 2)
             text_extents = self.ctx.text_extents(str(label))
             self.ctx.move_to(nx[n] - text_extents.width/2., ny[n] + text_extents.height/2.)
             self.ctx.show_text(str(label))
@@ -496,6 +507,8 @@ class MelodyPic:
 
         self.draw_white_keys()
         self.draw_black_keys()
+
+        self.draw_time_lines()
 
         self.draw_pitch_class_chords()
         self.draw_pitch_class_lines()
@@ -523,21 +536,23 @@ class MelodyPic:
 
         while chords:
             combined_signature, combined_root, combined_name, combined_intervals = chords.pop(0)
+            print(f"Starting: {combined_signature:03x} ~ {combined_signature:012b}: {combined_root} {combined_name} {combined_intervals}")
             combined_intervals = set(combined_intervals)
             pending_chords = []
             while chords:
                 if (combined_signature & chords[0][0]) == chords[0][0]:
-                    #print(f"Discarding: {chords[0][0]:03x} ~ {chords[0][0]:012b}: {chords[0][1]} {chords[0][2]} {chords[0][3]}")
+                    print(f"Discarding: {chords[0][0]:03x} ~ {chords[0][0]:012b}: {chords[0][1]} {chords[0][2]} {chords[0][3]}")
                     chords.pop(0)
                 elif (combined_signature & chords[0][0]) != 0:
                     chord_signature, chord_root, chord_name, chord_intervals = chords.pop(0)
-                    #print(f"Combining: {chord_signature:03x} ~ {chord_signature:012b}: {chord_root} {chord_name} {chord_intervals}")
+                    print(f"Combining: {chord_signature:03x} ~ {chord_signature:012b}: {chord_root} {chord_name} {chord_intervals}")
                     combined_signature |= chord_signature
-                    combined_intervals |= set([i + chord_root - combined_root for i in chord_intervals])
+                    combined_intervals |= set([i + ((chord_root - combined_root) % 12) for i in chord_intervals])
                     combined_name += f" + {chord_name} on {chord_root}"
                 else:
                     pending_chords.append(chords.pop(0))
             combined_chords.append((combined_signature, combined_root, combined_name, sorted(combined_intervals)))
+            print(f"Final: {combined_signature:03x} ~ {combined_signature:012b}: {combined_root} {combined_name} {sorted(combined_intervals)}")
             chords = pending_chords
 
         for combined_signature, combined_root, combined_name, combined_intervals in combined_chords:
@@ -577,6 +592,11 @@ class MelodyPic:
         self.chords_found = self.find_chords()
         print("{}".format(self.chords_found))
 
+        self.note_radius = [12. if i else 10. for i in self.notes_in_scale]
+        for chord_signature, chord_root, chord_name, chord_intervals in self.chords_found:
+            if chord_intervals:
+                self.note_radius[chord_root] = 24.
+
     def change_root(self, num_key, scale=None):
         self.root_note = (num_key % 12)
         self.scale = MusicScale(self.root_note)
@@ -588,3 +608,6 @@ class MelodyPic:
             scale = ((scale << 12 | scale) >> ((12-num_key) % 12)) & 0xFFF
             self.notes_in_scale = [(scale & 1<<(r%12) != 0) for r in range(12)]
             print(f"{scale:03x} ~ {scale:012b} -> {self.notes_in_scale}")
+            self.note_radius = [12. if i else 10. for i in self.notes_in_scale]
+        else:
+            self.note_radius = [12.] * 12

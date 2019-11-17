@@ -135,6 +135,8 @@ class MidiFileSoundPlayer():
 
         pitch_histogram_per_bar = []
 
+        full_song = []
+
         pitch_histogram = [0] * 12
         self.instruments = set()
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
@@ -169,10 +171,18 @@ class MidiFileSoundPlayer():
                     #music_key = message.key
                     eprint('Key signature changed to {}'.format(message.key))
 
+            try:
+                current_tick_in_song = full_song[count_ticks_in_total]
+            except IndexError:
+                full_song += [None] * (count_ticks_in_total - len(full_song) + 1)
+                current_tick_in_song = []
+                full_song[count_ticks_in_total] = current_tick_in_song
+
             while count_ticks_in_beat >= total_ticks_in_beat:
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
                 self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
+                #current_tick_in_song[total_ticks_in_measure][2] = pitch_classes_in_beat
                 eprint(f"beat@{count_ticks_in_total}: {num_beat}:{current_beat_tick} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
                 current_beat_tick = count_ticks_in_total
                 pitch_classes_in_beat = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
@@ -180,6 +190,7 @@ class MidiFileSoundPlayer():
             while count_ticks_in_measure >= total_ticks_in_measure:
                 h = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
                 pitch_histogram_per_bar.append(h)
+                #current_tick_in_song[total_ticks_in_measure][1] = h
                 eprint(f"Bar #{num_bar}: {pitch_histogram} ({time_of_measure:1f} s) -> {h:03x} ~ {h:012b}")
                 num_bar += 1
                 count_ticks_in_measure -= total_ticks_in_measure
