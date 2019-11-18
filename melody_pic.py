@@ -58,8 +58,8 @@ class MelodyPic:
 
         self.notes_in_scale = [(scale & 1<<(r%12) != 0) for r in range(tonic*7, tonic*7 + 12)]
 
-        self.vstep = 12. * math.sqrt(5.)
-        self.hstep = 12.
+        self.vstep = 10. * math.sqrt(5.)
+        self.hstep = 10.
 
         min_height_chords = int(self.hstep * 27)
 
@@ -77,6 +77,9 @@ class MelodyPic:
 
         self.chord_pitch_classes = 0
         self.chords_found = []
+
+        self.current_song = {}
+        self.current_tick = 0
 
         self.note_radius = [14.] * 12
 
@@ -100,17 +103,62 @@ class MelodyPic:
     OCTAVE_END = 6 + 1
 
     def draw_time_lines(self):
+        y_min = 20
+        y_max = self.height - 100 - 20
+
         pos = 0
         for n in range(12 * self.OCTAVE_START, 12 * (self.OCTAVE_END + 1)): # Octaves 2 to 5
             x = 9 + (pos + 0.5) * self.BLACK_KEY_WIDTH
-            y1 = 20
-            y2 = self.height - 100 - 20
             pos += 1
 
-            self.ctx.move_to(x, y1)
-            self.ctx.set_source_rgb(0.3, 0.3, 0.3)
-            self.ctx.line_to(x, y2)
+            self.ctx.move_to(x, y_min)
+            self.ctx.set_source_rgb(0.5, 0.5, 0.5)
+            self.ctx.line_to(x, y_max)
             self.ctx.stroke()
+
+        x_min = 9 + 0.5 * self.BLACK_KEY_WIDTH
+        x_max = 9 + (12*(self.OCTAVE_END - self.OCTAVE_START + 1) - 0.5) * self.BLACK_KEY_WIDTH
+
+        n_ticks = 2000
+
+        for t in range(n_ticks):
+            try:
+                if not self.current_song[int(self.current_tick + t)][0] is None:
+                    y = y_max - t * (y_max - y_min) / n_ticks
+                    self.ctx.move_to(x_min, y)
+                    self.ctx.set_source_rgb(0.5, 0.5, 0.5)
+                    self.ctx.line_to(x_max, y)
+                    self.ctx.stroke()
+            except (IndexError, KeyError):
+                pass
+
+        notes = []
+        for a in self.notes_active:
+            if a:
+                v = [y_max if (a & 1<<c != 0) else None for c in range(16)]
+            else:
+                v = [ None ] * 16
+            notes.append(v)
+
+        for t in range(n_ticks):
+            try:
+                tick_data = self.current_song[int(self.current_tick + t)]
+            except (IndexError, KeyError):
+                continue
+            y = y_max - t * (y_max - y_min) / n_ticks
+            for (n_channel, n_note, n_program) in tick_data[3]:
+                if notes[n_note][n_channel] is None:
+                    notes[n_note][n_channel] = y
+            for (n_channel, n_note) in tick_data[4]:
+                if notes[n_note][n_channel] and n_note > self.OCTAVE_START * 12 and n_note < self.OCTAVE_END * 12:
+                    x = 9 + ((n_note - self.OCTAVE_START * 12) + 0.5) * self.BLACK_KEY_WIDTH
+                    self.ctx.move_to(x, notes[n_note][n_channel])
+                    self.ctx.set_line_width(4)
+                    color = self.get_color_from_channel(n_channel, 0.8)
+                    self.ctx.set_source_rgb(*color)
+                    self.ctx.line_to(x, y)
+                    self.ctx.stroke()
+                notes[n_note][n_channel] = None
 
     def draw_white_keys(self):
         pos = 0
@@ -323,7 +371,7 @@ class MelodyPic:
         return hsv_to_rgb(360. * ((note*7)%12)/12., saturation, value)
 
     def is_pitch_class_visible(self, n):
-        return n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 15
+        return n >= self.pitch_class_lower_limit and n < self.pitch_class_upper_limit and (self.get_vpos_from_pitch_class(n) % 24) < 18
 
     def get_pitch_class_label(self, n):
         return NOTE_NAMES_BY_FIFTHS[15 + ((n + self.root_note) * 7 + 7) % 24 - 7]
@@ -410,7 +458,7 @@ class MelodyPic:
         self.ctx.save()
 
         cx = self.width - 32 * self.hstep / 2
-        cy = (self.height - 2 * self.hstep - 14 * self.vstep) / 2
+        cy = (self.height - 2 * self.hstep - 16 * self.vstep) / 2
 
         cr = min(self.width - cx, cy) - 30
 
@@ -595,6 +643,9 @@ class MelodyPic:
 
         return self.combine_chords(chords_found)
 
+    def set_tick(self, tick):
+        self.current_tick = tick
+
     def set_chord(self, chord=0):
         print(f"Pitch class histogram: {chord:#06x} = {chord:>012b}")
 
@@ -621,3 +672,7 @@ class MelodyPic:
             self.note_radius = [12. if i else 10. for i in self.notes_in_scale]
         else:
             self.note_radius = [12.] * 12
+
+    def set_song_score(self, song):
+        #print(song)
+        self.current_song = song

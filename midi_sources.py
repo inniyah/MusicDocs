@@ -137,7 +137,7 @@ class MidiFileSoundPlayer():
 
         pitch_histogram_per_bar = []
 
-        full_song = {}
+        self.full_song = {}
 
         channel_programs = [0] * 16
         pitch_histogram = [0] * 12
@@ -181,10 +181,10 @@ class MidiFileSoundPlayer():
                     eprint('Key signature changed to {}'.format(message.key))
 
             try:
-                current_tick_in_song = full_song[count_ticks_in_total]
+                current_tick_in_song = self.full_song[count_ticks_in_total]
             except (IndexError, KeyError):
-                full_song[count_ticks_in_total] = [None, None, None, [], []]
-                current_tick_in_song = full_song[count_ticks_in_total]
+                self.full_song[count_ticks_in_total] = [None, None, None, [], []]
+                current_tick_in_song = self.full_song[count_ticks_in_total]
             current_tick_in_song[3] += notes_on
             current_tick_in_song[4] += notes_off
 
@@ -192,7 +192,7 @@ class MidiFileSoundPlayer():
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
                 self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
-                full_song[current_beat_tick][2] = pitch_classes_in_beat
+                self.full_song[current_beat_tick][2] = pitch_classes_in_beat
                 eprint(f"beat@{count_ticks_in_total}: {num_beat}:{current_beat_tick} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
                 current_beat_tick = count_ticks_in_total
                 pitch_classes_in_beat = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
@@ -200,7 +200,7 @@ class MidiFileSoundPlayer():
             while count_ticks_in_measure >= total_ticks_in_measure:
                 h = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
                 pitch_histogram_per_bar.append(h)
-                full_song[current_bar_tick][1] = h
+                self.full_song[current_bar_tick][1] = h
                 eprint(f"Bar #{num_bar}: {pitch_histogram} ({time_of_measure:1f} s) -> {h:03x} ~ {h:012b}")
                 bar_ticks.append(current_bar_tick)
                 num_bar += 1
@@ -217,18 +217,22 @@ class MidiFileSoundPlayer():
         print(['{:03x}={}'.format(v, get_music_key_name(s)) for v, s in zip(pitch_histogram_per_bar, self.music_key_per_bar)])
 
         for i, (v, s) in enumerate(zip(pitch_histogram_per_bar, self.music_key_per_bar)):
-            full_song[bar_ticks[i]][0] = s
-            full_song[bar_ticks[i]][1] = v
+            self.full_song[bar_ticks[i]][0] = s
+            self.full_song[bar_ticks[i]][1] = v
 
         eprint(f"end: {pitch_histogram}")
         eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
 
-        #print(full_song)
+        #print(self.full_song)
 
     def play(self):
         if self.midi_file.type == 2:
             # Can't merge tracks in type 2 (asynchronous) file
             return
+
+        if self.keyboard_handlers:
+            for keyboard_handler in self.keyboard_handlers:
+                keyboard_handler.set_song_score(self.full_song)
 
         channel_programs = [0] * 16
 
@@ -301,6 +305,10 @@ class MidiFileSoundPlayer():
                 count_ticks_in_measure += message.time
                 count_ticks_in_beat += message.time
 
+                if self.keyboard_handlers:
+                    for keyboard_handler in self.keyboard_handlers:
+                        keyboard_handler.set_tick(count_ticks_in_total)
+
             while count_ticks_in_beat >= total_ticks_in_beat:
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
@@ -368,8 +376,11 @@ class MidiFileSoundPlayer():
                 elif message.type == 'key_signature':
                     eprint(f'Key signature changed to {message.key}')
 
-        for keyboard_handler in self.keyboard_handlers:
-            keyboard_handler.set_chord(0)
+        if self.keyboard_handlers:
+            for keyboard_handler in self.keyboard_handlers:
+                keyboard_handler.set_song_score({})
+                keyboard_handler.set_chord(0)
+                keyboard_handler.set_tick(0)
 
     def __del__(self): # See:https://eli.thegreenplace.net/2009/06/12/safely-using-destructors-in-python/
         self.fs.delete()
