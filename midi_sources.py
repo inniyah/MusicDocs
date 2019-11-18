@@ -124,8 +124,10 @@ class MidiFileSoundPlayer():
         count_ticks_in_measure = 0
         num_bar = 1
         num_beat = 1
+        current_bar_tick = 0
         current_beat_tick = 0
         pitch_classes_in_beat = 0
+        bar_ticks = []
 
         # See: https://www.geeksforgeeks.org/python-find-the-closest-key-in-dictionary/
         self.chords_per_beat = {}
@@ -135,8 +137,9 @@ class MidiFileSoundPlayer():
 
         pitch_histogram_per_bar = []
 
-        full_song = []
+        full_song = {}
 
+        channel_programs = [0] * 16
         pitch_histogram = [0] * 12
         self.instruments = set()
         for message in mido.midifiles.tracks.merge_tracks(self.midi_file.tracks):
@@ -144,16 +147,22 @@ class MidiFileSoundPlayer():
             total_ticks_in_measure = ticks_per_beat * time_signature_numerator * 4 / time_signature_denominator
             time_of_measure = mido.midifiles.units.tick2second(total_ticks_in_measure, self.midi_file.ticks_per_beat, tempo)
 
+            notes_on = []
+            notes_off = []
+
             if isinstance(message, mido.Message):
                 if message.type == 'note_on':
                     if message.channel != 9: # Exclude percussion 
                         pitch_histogram[message.note % 12] += 1
                         pitch_classes_in_beat |= 1 << (message.note % 12)
+                        notes_on.append((message.channel, message.note, channel_programs[message.channel]))
                 elif message.type == 'note_off':
                     if message.channel != 9: # Exclude percussion 
                         pitch_histogram[message.note % 12] -= 1
+                        notes_off.append((message.channel, message.note))
                 elif message.type == 'program_change':
                     self.instruments.add(message.program)
+                    channel_programs[message.channel] = message.program
 
                 count_ticks_in_total += message.time
                 count_ticks_in_measure += message.time
@@ -173,16 +182,17 @@ class MidiFileSoundPlayer():
 
             try:
                 current_tick_in_song = full_song[count_ticks_in_total]
-            except IndexError:
-                full_song += [None] * (count_ticks_in_total - len(full_song) + 1)
-                current_tick_in_song = []
-                full_song[count_ticks_in_total] = current_tick_in_song
+            except (IndexError, KeyError):
+                full_song[count_ticks_in_total] = [None, None, None, [], []]
+                current_tick_in_song = full_song[count_ticks_in_total]
+            current_tick_in_song[3] += notes_on
+            current_tick_in_song[4] += notes_off
 
             while count_ticks_in_beat >= total_ticks_in_beat:
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
                 self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
-                #current_tick_in_song[total_ticks_in_measure][2] = pitch_classes_in_beat
+                full_song[current_beat_tick][2] = pitch_classes_in_beat
                 eprint(f"beat@{count_ticks_in_total}: {num_beat}:{current_beat_tick} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
                 current_beat_tick = count_ticks_in_total
                 pitch_classes_in_beat = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
@@ -190,19 +200,30 @@ class MidiFileSoundPlayer():
             while count_ticks_in_measure >= total_ticks_in_measure:
                 h = sum([1 << (n % 12) if pitch_histogram[n] > 0 else 0 for n in range(12)])
                 pitch_histogram_per_bar.append(h)
-                #current_tick_in_song[total_ticks_in_measure][1] = h
+                full_song[current_bar_tick][1] = h
                 eprint(f"Bar #{num_bar}: {pitch_histogram} ({time_of_measure:1f} s) -> {h:03x} ~ {h:012b}")
+                bar_ticks.append(current_bar_tick)
                 num_bar += 1
+                current_bar_tick = count_ticks_in_total
                 count_ticks_in_measure -= total_ticks_in_measure
 
         eprint(f"end@{count_ticks_in_total}: {num_beat}:{current_beat_tick} -> {pitch_classes_in_beat:#06x} = {pitch_classes_in_beat:>012b}")
         self.chords_per_beat[current_beat_tick] = pitch_classes_in_beat
 
+        if count_ticks_in_measure:
+            bar_ticks.append(current_bar_tick)
+
         self.music_key_per_bar = find_music_key(pitch_histogram_per_bar)
         print(['{:03x}={}'.format(v, get_music_key_name(s)) for v, s in zip(pitch_histogram_per_bar, self.music_key_per_bar)])
 
+        for i, (v, s) in enumerate(zip(pitch_histogram_per_bar, self.music_key_per_bar)):
+            full_song[bar_ticks[i]][0] = s
+            full_song[bar_ticks[i]][1] = v
+
         eprint(f"end: {pitch_histogram}")
         eprint([MIDI_GM1_INSTRUMENT_NAMES[i + 1] for i in self.instruments])
+
+        #print(full_song)
 
     def play(self):
         if self.midi_file.type == 2:
