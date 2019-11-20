@@ -655,7 +655,7 @@ class MelodyPic:
 
     def set_tick(self, tick, secs_per_tick):
         self.current_tick = tick
-        #self.current_secs_per_tick = secs_per_tick
+        self.current_secs_per_tick = secs_per_tick
         self.current_tick_time = time.time()
 
     def set_chord(self, chord=0):

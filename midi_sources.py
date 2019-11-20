@@ -305,10 +305,6 @@ class MidiFileSoundPlayer():
                 count_ticks_in_measure += message.time
                 count_ticks_in_beat += message.time
 
-                if self.keyboard_handlers:
-                    for keyboard_handler in self.keyboard_handlers:
-                        keyboard_handler.set_tick(count_ticks_in_total, tempo * 1e-6 / ticks_per_beat)
-
             while count_ticks_in_beat >= total_ticks_in_beat:
                 num_beat += 1
                 count_ticks_in_beat -= total_ticks_in_beat
@@ -375,6 +371,10 @@ class MidiFileSoundPlayer():
                     eprint(f'Time signature changed to {message.numerator}/{message.denominator}. Clocks per click: {message.clocks_per_click}, Notated 32nd Notes per_Beat: {message.notated_32nd_notes_per_beat}')
                 elif message.type == 'key_signature':
                     eprint(f'Key signature changed to {message.key}')
+
+            if self.keyboard_handlers:
+                for keyboard_handler in self.keyboard_handlers:
+                    keyboard_handler.set_tick(count_ticks_in_total, tempo * 1e-6 / ticks_per_beat)
 
         if self.keyboard_handlers:
             for keyboard_handler in self.keyboard_handlers:
