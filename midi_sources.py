@@ -307,7 +307,7 @@ class MidiFileSoundPlayer():
 
                 if self.keyboard_handlers:
                     for keyboard_handler in self.keyboard_handlers:
-                        keyboard_handler.set_tick(count_ticks_in_total)
+                        keyboard_handler.set_tick(count_ticks_in_total, tempo * 1e-6 / ticks_per_beat)
 
             while count_ticks_in_beat >= total_ticks_in_beat:
                 num_beat += 1

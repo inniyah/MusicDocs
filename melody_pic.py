@@ -7,6 +7,7 @@ import random
 import os
 import queue
 import sys
+import time
 
 from MusicDefs import MusicDefs
 from MusicScale import MusicScale
@@ -80,6 +81,8 @@ class MelodyPic:
 
         self.current_song = {}
         self.current_tick = 0
+        self.current_tick_time = time.time()
+        self.current_secs_per_tick = 1e10
 
         self.note_radius = [14.] * 12
 
@@ -103,6 +106,10 @@ class MelodyPic:
     OCTAVE_END = 6 + 1
 
     def draw_time_lines(self):
+        self.ctx.save()
+
+        base_tick = self.current_tick + (time.time() - self.current_tick_time) / self.current_secs_per_tick
+
         y_min = 20
         y_max = self.height - 100 - 20
 
@@ -123,7 +130,7 @@ class MelodyPic:
 
         for t in range(n_ticks):
             try:
-                if not self.current_song[int(self.current_tick + t)][0] is None:
+                if not self.current_song[int(base_tick + t)][0] is None:
                     y = y_max - t * (y_max - y_min) / n_ticks
                     self.ctx.move_to(x_min, y)
                     self.ctx.set_source_rgb(0.5, 0.5, 0.5)
@@ -142,7 +149,7 @@ class MelodyPic:
 
         for t in range(n_ticks):
             try:
-                tick_data = self.current_song[int(self.current_tick + t)]
+                tick_data = self.current_song[int(base_tick + t)]
             except (IndexError, KeyError):
                 continue
             y = y_max - t * (y_max - y_min) / n_ticks
@@ -153,12 +160,15 @@ class MelodyPic:
                 if notes[n_note][n_channel] and n_note > self.OCTAVE_START * 12 and n_note < self.OCTAVE_END * 12:
                     x = 9 + ((n_note - self.OCTAVE_START * 12) + 0.5) * self.BLACK_KEY_WIDTH
                     self.ctx.move_to(x, notes[n_note][n_channel])
-                    self.ctx.set_line_width(4)
+                    self.ctx.set_line_width(self.BLACK_KEY_WIDTH - 4)
+                    self.ctx.set_line_cap(cairo.LINE_CAP_ROUND)
                     color = self.get_color_from_channel(n_channel, 0.8)
-                    self.ctx.set_source_rgb(*color)
+                    self.ctx.set_source_rgba(*color, 0.5)
                     self.ctx.line_to(x, y)
                     self.ctx.stroke()
                 notes[n_note][n_channel] = None
+
+        self.ctx.restore()
 
     def draw_white_keys(self):
         pos = 0
@@ -643,8 +653,10 @@ class MelodyPic:
 
         return self.combine_chords(chords_found)
 
-    def set_tick(self, tick):
+    def set_tick(self, tick, secs_per_tick):
         self.current_tick = tick
+        #self.current_secs_per_tick = secs_per_tick
+        self.current_tick_time = time.time()
 
     def set_chord(self, chord=0):
         print(f"Pitch class histogram: {chord:#06x} = {chord:>012b}")
