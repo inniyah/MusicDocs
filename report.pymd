@@ -8,7 +8,7 @@ output:
     keep_md: yes
 ---
 
-```{python results="hide", echo=False}
+```{python3 results="hide", echo=False}
 from numpy import array
 from sethares import get_dissonance_plot
 from notefreqs import get_notes_info
@@ -28,7 +28,7 @@ def clean_print(*args, **kwargs):
 
 Dissonance curve with 6 harmonics and decay rate of 0.8 (Sethares Figure 3)
 
-```{python Sethares Figure 3, echo=False}
+```{python3 Sethares Figure 3, echo=False}
     plt = get_dissonance_plot(
         freq = 500 * array([1 + i for i in range(6)]),
         amp = .88**array([0 + i for i in range(6)]),
@@ -49,7 +49,7 @@ Dissonance curve with 6 harmonics and decay rate of 0.8 (Sethares Figure 3)
 
 Dissonance curve with 8 harmonics
 
-```{python More harmonics, echo=False}
+```{python3 More harmonics, echo=False}
     plt = get_dissonance_plot(
         freq = 440.00 * array([1 + i for i in range(8)]),
         amp = 1.0**array([0 + i for i in range(8)]),
@@ -61,7 +61,7 @@ Dissonance curve with 8 harmonics
 ```
 
 Frequencies and ratios of equal-temperament 12 notes
-```{python Equal temperament notes info, echo=False}
+```{python3 Equal temperament notes info, echo=False}
     interval_names = ['I','ii','II','iii','III','IV','v','V','vi','VI','vii','VII','I\'']
     notes_names = ["A4", "B4b/A4#", "B4", "C4", "D4b/C4#", "D4", "E4b/D4#", "E4", "F4", "G4/F4#", "G4", "A4b/G4#", "A5" ]
     notes_freqs = {name: 1.00 * math.pow(2., semitone/12.) for semitone, name in enumerate(notes_names)}
@@ -89,8 +89,8 @@ Frequencies and ratios of equal-temperament 12 notes
         clean_print(f"{d['name']} ({interval_names[d['interval']]}): concordance={concordance_str}]")
 ```
 
-```{python Cairo hexa test, echo=False}
-hexa_pic = HexagonalLayoutPic(D=33, side_fields=7)
+```{python3 Cairo hexa test, echo=False}
+hexa_pic = HexagonalLayoutPic(D=33)
 with BytesIO() as svgio:
     surface = cairo.SVGSurface(svgio, hexa_pic.width, hexa_pic.height)
     ctx = cairo.Context(surface)
@@ -110,7 +110,7 @@ with BytesIO() as svgio:
 IPython.display.Image(data=pngio.getvalue())
 ```
 
-```{python Cairo piano test, echo=False}
+```{python3 Cairo piano test, echo=False}
 piano_pic = PianoOctavePic(width=400, height=200)
 with BytesIO() as svgio:
     surface = cairo.SVGSurface(svgio, piano_pic.width, piano_pic.height)
